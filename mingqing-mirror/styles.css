@@ -10,3 +10,13 @@
 @media(max-width:800px){.hero{grid-template-columns:1fr;padding:42px 0 38px;gap:28px;min-height:auto}.hero h1{letter-spacing:.12em}.hero-art{max-width:100%}.hero-art .art-hero{aspect-ratio:16/10}.three-up{grid-template-columns:1fr}.report-grid{grid-template-columns:1fr}.quiz-card{grid-template-columns:1fr}.quiz-card .art-scene{height:195px;min-height:195px;border:0;border-bottom:1px solid #9a774a46}.quiz-card .paper-content{padding:31px 28px}.main-match{grid-template-columns:140px 1fr}.main-match .art-portrait{width:140px}.about-slot-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.site-header{height:64px;padding:0 15px}.brand{font-size:14px;letter-spacing:.07em}.brand small{font-size:7px}.brand-seal{width:30px;height:34px;font-size:18px}.site-header nav{gap:13px;font-size:12px}main{padding:15px 14px 44px}.hero{padding-top:35px}.hero h1{font-size:clamp(40px,12vw,55px)}.hero-sub{font-size:18px}.hero .lead{font-size:13px}.mode-grid{grid-template-columns:1fr;gap:12px}.mode{min-height:220px}.paper .paper-content{padding:23px 24px}.quiz-card .paper-content{padding:25px 23px}.quiz-card h2{font-size:27px}.quiz-actions{gap:9px}.quiz-actions .btn{flex:1}.quiz-actions .right{width:100%;justify-content:flex-end}.quiz-actions .right .btn{flex:none}.report-head h1{font-size:33px}.main-match{grid-template-columns:100px 1fr;gap:15px}.main-match .art-portrait{width:100px}.match-name{font-size:30px}.quote{font-size:15px}.site-footer{padding:20px 15px}.hero-art .stamp{right:3px;bottom:-13px}.about-slot-grid{grid-template-columns:1fr 1fr}.axis-block{font-size:12px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{transition:none!important;animation:none!important}}
+
+/* Media-manifest powered global art and report frame slots */
+.site-surface .art-slot.wallpaper{position:absolute;inset:0;width:100%;height:100%;border:0;background:transparent;opacity:.08;pointer-events:none}
+.site-surface .art-slot.wallpaper[data-phase=image],.site-surface .art-slot.wallpaper[data-phase=gif]{opacity:.22}
+.site-surface .art-slot.wallpaper:after{display:none}
+.brand-seal .art-icon{width:30px;height:30px;border:0;background:transparent}
+.brand-seal .art-icon:after{display:none}
+.card-frame-wrap{position:absolute;inset:0;pointer-events:none;opacity:.13;overflow:hidden}
+.card-frame-wrap .art-slot{width:100%;height:100%;border:0;background:transparent}
+.card-frame-wrap .art-slot:after{display:none}
