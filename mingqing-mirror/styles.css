@@ -20,3 +20,10 @@
 .card-frame-wrap{position:absolute;inset:0;pointer-events:none;opacity:.13;overflow:hidden}
 .card-frame-wrap .art-slot{width:100%;height:100%;border:0;background:transparent}
 .card-frame-wrap .art-slot:after{display:none}
+
+.site-surface{z-index:0}
+.site-header,main,.site-footer{position:relative;z-index:1}
+.report-banner{max-width:1120px;margin:-12px auto 22px;overflow:hidden}
+.report-banner .art-scene{height:170px;border:1px solid #aa895d46;opacity:.7}
+.mode .mode-icon{position:absolute;right:58px;top:17px;width:34px;height:34px;border:0;opacity:.6}
+.mode .mode-icon:after{display:none}
