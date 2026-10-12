@@ -1,0 +1,17 @@
+name = "starport-deepseek-gateway"
+main = "src/index.js"
+compatibility_date = "2026-10-13"
+
+# Public configuration only. DO NOT commit API credentials or Turnstile secret here.
+[vars]
+AI_ENABLED = "false"
+DEEPSEEK_MODEL = "deepseek-flash"
+ALLOWED_ORIGIN = "https://zjj1280637679-ship-it.github.io"
+
+# Per visitor-network quota; not a substitute for the upstream provider's spending limits.
+[[ratelimits]]
+name = "AI_LIMITER"
+namespace_id = "1001"
+[ratelimits.simple]
+limit = 12
+period = 60
