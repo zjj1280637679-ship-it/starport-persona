@@ -1,6 +1,6 @@
 import {AXES,QUESTIONS,QUESTION_MAP,CHARACTERS,MODES} from "./data.js";
 import {art} from "./media.js";
-import {aiEnabled,analyzeAnswer,rewriteQuestion} from "./ai-client.js";
+import {aiEnabled,analyzeAnswer,rewriteQuestion,requestCommentary} from "./ai-client.js";
 const KEY="mingqing-mirror:records-v1",DRAFT="mingqing-mirror:draft-v1";
 const root=document.querySelector("#app");
 const state={draft:read(DRAFT,null),records:read(KEY,[]),showId:null};
@@ -153,7 +153,7 @@ function renderResult(){
  const weak=dims.slice(-2).map(([n])=>({personality:"处世禀性",politics:"政治取向",camp:"历史阵营共鸣",wit:"智谋表现"}[n]));
  return '<section class="report-head"><div class="kicker" style="justify-content:center">YOUR HISTORICAL MIRROR</div><h1>乱世鉴书</h1><p class="subtle">经 '+MODES[rec.mode].title+'，史镜照见以下最近人影。</p></section>'+
  '<div class="report-banner">'+art("result.banner","scene")+'</div>'+
- '<article class="paper"><div class="card-frame-wrap">'+art("card.frame","scene")+'</div><div class="paper-content"><div class="main-match">'+art("character."+first.id,"portrait")+'<div><div class="small-label">最接近的历史人物 · '+esc(first.era)+'</div><h2 class="match-name">'+esc(first.name)+'</h2><div class="tagline">'+esc(first.tagline)+'</div><p class="muted">'+esc(first.reading)+'</p><div class="small-label">游戏相似指数 '+first.match+'/100（非概率）</div></div></div><div class="divider"></div><blockquote class="quote">“四镜所照，并非前身。你的选择在'+good.join("、")+'方面与此人较近，但'+weak.join("、")+'也存在不可忽略的差别。”</blockquote><p class="status">'+(first.match<72?"相对最接近，但差异明显。":"在当前人物库中具有较强的相对贴近度。")+(gap<=2?" 第一与第二候选极为接近，排序并不稳固。":"")+'</p><p class="muted" style="font-size:12px">'+coverageNote(s)+'</p></div></article>'+
+ '<article class="paper"><div class="card-frame-wrap">'+art("card.frame","scene")+'</div><div class="paper-content"><div class="main-match">'+art("character."+first.id,"portrait")+'<div><div class="small-label">最接近的历史人物 · '+esc(first.era)+'</div><h2 class="match-name">'+esc(first.name)+'</h2><div class="tagline">'+esc(first.tagline)+'</div><p class="muted">'+esc(first.reading)+'</p><div class="small-label">游戏相似指数 '+first.match+'/100（非概率）</div></div></div><div class="divider"></div><blockquote class="quote">“四镜所照，并非前身。你的选择在'+good.join("、")+'方面与此人较近，但'+weak.join("、")+'也存在不可忽略的差别。”</blockquote><p class="status">'+(first.match<72?"相对最接近，但差异明显。":"在当前人物库中具有较强的相对贴近度。")+(gap<=2?" 第一与第二候选极为接近，排序并不稳固。":"")+'</p><p class="muted" style="font-size:12px">'+coverageNote(s)+'</p>'+(rec.aiCommentary?'<div class="inset"><div class="small-label">DeepSeek 史官判词</div><p class="serif">'+esc(rec.aiCommentary)+'</p></div>':aiEnabled&&rec.aiConsent?'<p><button class="btn small" data-action="commentary" data-id="'+esc(rec.id)+'">AI 史官判词</button></p>':'')+'</div></article>'+
  '<section class="section report-grid"><div class="paper"><div class="paper-content"><h3>壹 · 处世禀性</h3><p class="muted">四组独立的思考与处事偏好，不代表身份或族群。</p>'+AXES.personality.map((a,i)=>axisBlock(a,s.p[i])).join("")+'</div></div>'+
  '<div class="paper"><div class="paper-content"><h3>贰 · 治世政略</h3><p class="muted">政治主张与历史阵营各自计算。</p>'+AXES.politics.map((a,i)=>axisBlock(a,s.g[i])).join("")+'</div></div>'+
  '<div class="paper"><div class="paper-content"><h3>叁 · 四大阵营共鸣</h3><p class="muted">“血”仅为亚文化式娱乐命名，不是民族血统或现实身份测定。四项互不要求合计100。</p>'+AXES.camps.map((a,i)=>bar(a[1],s.c[i])).join("")+'</div></div>'+
@@ -221,6 +221,19 @@ document.addEventListener("click",async e=>{
  if(action==="open-record"){state.showId=id;navigate("result="+id);return}
  if(action==="delete-record"){if(confirm("确定删除这份本机卷宗？")){state.records=state.records.filter(r=>r.id!==id);persist();render();toast("已删除")};return}
  if(action==="clear-records"){if(confirm("清空所有本机卷宗？此操作不可恢复。")){state.records=[];persist();render()}return}
+ if(action==="commentary"){
+  const rec=state.records.find(x=>x.id===id);
+  if(!rec||!rec.aiConsent||!aiEnabled)return;
+  b.disabled=true;toast("正在生成 DeepSeek 判词…");
+  try{
+   const ch=rank(rec.score)[0],sorted=Object.entries(ch.parts).sort((a,b)=>a[1]-b[1]);
+   const names={personality:"处世禀性",politics:"治世政略",camp:"阵营倾向",wit:"游戏智谋"};
+   const prose=await requestCommentary(ch.name,sorted.slice(0,2).map(x=>names[x[0]]),sorted.slice(-2).map(x=>names[x[0]]));
+   if(prose){rec.aiCommentary=prose;persist();render();toast("判词已存入本机卷宗")}
+   else{b.disabled=false;toast("AI 不可用，原始报告不变")}
+  }catch{b.disabled=false;toast("AI 不可用，原始报告不变")}
+  return;
+ }
  if(action==="share"){
   const r=state.records.find(x=>x.id===id),ch=r&&rank(r.score)[0];if(!r||!ch)return;
   const message="《明清人物镜》我的最近历史镜像："+ch.name+"（游戏相似指数 "+ch.match+"/100），智谋 "+r.score.wit+"/100。此为架空历史娱乐测试，不是诊断。";
