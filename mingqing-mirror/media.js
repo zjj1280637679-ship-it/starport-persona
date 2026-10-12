@@ -21,8 +21,11 @@ function svg(kind){
 export function art(slot,kind="scene",extra=""){
  const m=MEDIA[slot]||MEDIA[slot.split(".")[0]+".default"]||{mode:"graphic"};
  const graphic='<span class="art-graphic">'+svg(kind)+'</span>';
- const phase=m.mode==="gif"?"gif":m.mode==="image"?"image":"graphic";
- const picture=phase==="graphic"?"":'<img class="art-image" src="'+String(m.src||"").replaceAll('"',"&quot;")+'" alt="'+String(m.alt||"装饰插画").replaceAll('"',"&quot;")+'" loading="lazy"/>';
+ const prefersReduced=typeof window!=="undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+ let phase=m.mode==="gif"?"gif":m.mode==="image"?"image":"graphic";
+ const chosenSrc=phase==="gif"&&prefersReduced?(m.poster||null):m.src;
+ if(phase==="gif"&&prefersReduced)phase=chosenSrc?"image":"graphic";
+ const picture=phase==="graphic"?"":'<img class="art-image" src="'+String(chosenSrc||"").replaceAll('"',"&quot;")+'" alt="'+String(m.alt||"装饰插画").replaceAll('"',"&quot;")+'" loading="lazy"/>';
  return '<div class="art-slot art-'+kind+' '+extra+'" data-art-slot="'+slot+'" data-phase="'+phase+'">'+graphic+picture+'</div>';
 }
 const backgroundHost=document.querySelector(".site-surface");
