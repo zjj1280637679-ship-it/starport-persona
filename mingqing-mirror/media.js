@@ -25,5 +25,9 @@ export function art(slot,kind="scene",extra=""){
  const picture=phase==="graphic"?"":'<img class="art-image" src="'+String(m.src||"").replaceAll('"',"&quot;")+'" alt="'+String(m.alt||"装饰插画").replaceAll('"',"&quot;")+'" loading="lazy"/>';
  return '<div class="art-slot art-'+kind+' '+extra+'" data-art-slot="'+slot+'" data-phase="'+phase+'">'+graphic+picture+'</div>';
 }
+const backgroundHost=document.querySelector(".site-surface");
+if(backgroundHost) backgroundHost.innerHTML=art("home.background","scene","wallpaper");
+const brandHost=document.querySelector(".brand-seal");
+if(brandHost&&MEDIA["icon.brand"]?.mode!=="graphic") brandHost.innerHTML=art("icon.brand","icon");
 // 若日后换图资源不存在，自动回退原图形层。
-document.addEventListener("error",e=>{if(e.target?.classList?.contains("art-image")){e.target.remove();e.target?.closest?.(".art-slot")?.setAttribute("data-phase","graphic");}},true);
+document.addEventListener("error",e=>{if(e.target?.classList?.contains("art-image")){const host=e.target.closest(".art-slot");e.target.remove();host?.setAttribute("data-phase","graphic");}},true);
