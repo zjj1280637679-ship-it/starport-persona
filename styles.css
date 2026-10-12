@@ -64,3 +64,29 @@ main{max-width:1440px}
 @media(max-width:920px){.hero.hero-v22{margin:20px 18px 0}.hero-v22 .hero-copy{width:64%;padding:48px 28px}.hero-v22 .hero-copy h1{font-size:clamp(36px,5.2vw,52px)}.feature-row{margin:20px 18px 36px}.feature-icon{width:45px;height:45px}.result-v22-hero{grid-template-columns:230px 1fr;gap:23px}}
 @media(max-width:620px){body{background-attachment:scroll}.site-header{position:relative}.hero.hero-v22{min-height:auto;margin:12px 12px 0;padding:0;border-radius:17px;display:flex;flex-direction:column;overflow:hidden}.hero-v22-visual{position:relative;order:0;inset:auto;width:100%;height:250px;background-image:linear-gradient(0deg,rgba(6,12,24,.73),transparent 44%),url('./assets/hero-v22.webp');background-size:cover;background-position:76% center;filter:none}.hero-v22 .hero-copy{order:1;min-height:0;width:100%;max-width:none;padding:24px 20px 28px;background:linear-gradient(180deg,#111a2c,#0c1424);display:block}.hero-v22 .hero-copy h1{font-size:clamp(34px,9vw,42px);line-height:1.33;margin:16px 0}.hero-v22 .hero-intro{font-size:12px;margin:0 0 18px}.hero-v22 .hero-actions{gap:11px}.hero-v22 .hero-actions small{font-size:10px;max-width:none}.hero-v22 .hero-actions .button{gap:5px;padding:13px 11px;font-size:12px}.hero-v22 .hero-note{font-size:10px}.hero-scroll-note{display:none}.feature-row{margin:14px 12px 28px;padding:21px 17px;gap:18px;grid-template-columns:1fr}.feature-icon{width:46px;height:46px}.feature h2{font-size:13px}.feature p{font-size:11px}.journey{padding:15px 12px 40px}.journey .story-side{padding:14px}.journey .question-panel{padding:20px 16px;margin-top:14px}.result{padding:20px 13px 40px}.result-v22-hero{grid-template-columns:1fr;gap:19px}.result-visual{max-width:270px;margin:auto}.result-v22-intro{text-align:center;max-width:370px;margin:auto}.result-v22-intro h2{font-size:28px;margin:10px 0}.result-v22-intro p{font-size:12px}.result-v22-intro .button{margin-top:6px}.result-header{margin-bottom:22px}.result-visual-title{font-size:17px}.result-visual-slot{font-size:13px}.result-visual-slot.slot-three{font-size:9px}}
 @media(prefers-reduced-motion:reduce){.hero-v22-visual{transition:none}}
+
+/* v2.3 Art Nouveau result tarot: keep artwork readable without overprinted text. */
+.tarot-result-hero{grid-template-columns:minmax(240px,340px) minmax(0,1fr);gap:clamp(24px,5vw,66px);padding:5px 12px 38px;align-items:center}
+.tarot-result-frame{max-width:390px;width:100%;margin:0;filter:drop-shadow(0 19px 28px rgba(0,0,0,.36))}
+.tarot-result-image{display:block;width:100%;height:auto;aspect-ratio:841/1870;object-fit:contain;border:1px solid #d6b780;border-radius:12px;box-shadow:0 0 0 6px #090f1d,0 0 0 7px rgba(222,182,121,.23)}
+.tarot-result-frame figcaption{text-align:center;margin-top:18px;color:#ccb284;font-size:10px;letter-spacing:1.6px}
+.tarot-result-hero .result-v22-intro h2 em{color:#e2bd83;font-style:normal}
+.tarot-motto{margin:20px 0;padding:14px 0;border-top:1px solid #caa97250;border-bottom:1px solid #caa97250;color:#efdaa9;letter-spacing:.6px;font-family:var(--serif)}
+.tarot-motto span{padding:0 6px;color:#8b7a60}
+.tarot-hint{font-size:11px!important;color:#a9abac!important;line-height:1.7!important;margin-top:14px}
+.tarot-archive{max-width:1280px;margin:0 auto}
+.tarot-gallery{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:22px;margin-top:32px}
+.tarot-tile{display:block;overflow:hidden;padding:8px;background:#132030;border:1px solid rgba(217,180,122,.34);border-radius:14px;text-align:left;transition:transform .23s ease,border-color .23s ease}
+.tarot-tile:hover{transform:translateY(-6px);border-color:#d6ac6c}
+.tarot-tile img{display:block;max-width:100%;width:100%;height:auto;aspect-ratio:841/1870;object-fit:cover;border-radius:8px;background:#b89a68}
+.tarot-tile-info{display:block;padding:14px 7px 9px}
+.tarot-tile-info strong{display:block;font-size:15px;color:#efd5a7;font-family:var(--serif);font-weight:600;margin-bottom:7px}
+.tarot-tile-info small{font-size:11px;color:#bdc6cf;line-height:1.75;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;min-height:54px}
+.tarot-tile-link{display:block;margin-top:10px;font-size:11px;color:#d9ab76}
+dialog:has(.tarot-modal){width:min(90vw,840px);max-height:88vh;overflow-y:auto}
+.tarot-modal{display:grid;grid-template-columns:minmax(140px,270px) minmax(0,1fr);gap:25px;align-items:center}
+.tarot-modal>img{width:100%;height:auto;aspect-ratio:841/1870;border-radius:9px;border:1px solid #e0c18c;box-shadow:0 12px 28px #0007}
+.tarot-modal h2{font-family:var(--serif);font-weight:500;color:#f4dab1}
+.tarot-modal p{line-height:1.9;color:#c4ccd4}
+@media(max-width:920px){.tarot-gallery{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.tarot-result-hero{grid-template-columns:minmax(220px,300px) 1fr}}
+@media(max-width:620px){.tarot-result-hero{grid-template-columns:1fr;gap:25px;padding:2px 0 34px}.tarot-result-frame{width:min(75vw,320px);margin:auto}.tarot-result-frame figcaption{font-size:9px;margin-top:14px}.tarot-gallery{gap:11px}.tarot-archive{padding:22px 13px}.tarot-tile{padding:5px;border-radius:9px}.tarot-tile-info{padding:12px 7px}.tarot-tile-info strong{font-size:12px}.tarot-tile-info small{font-size:10px;-webkit-line-clamp:3}.tarot-modal{grid-template-columns:1fr;gap:18px}.tarot-modal>img{max-width:240px;margin:auto}.tarot-modal h2{font-size:22px}}

@@ -15,6 +15,24 @@ const refs = [
   ['Stellaris · 官方帝国测试','https://www.paradoxinteractive.com/games/stellaris/stellaris-quiz','借鉴思潮、政体与文明故事的组合结论。'],
   ['Stellaris · Galactic Paragons','https://www.paradoxinteractive.com/games/stellaris/add-ons/stellaris-galactic-paragons','借鉴用国策让文明倾向变成角色设定。']
 ];
+// Art Nouveau tarot cards: the first dominant ethos determines the commemorative artwork.
+const tarotByEthos = Object.freeze({
+  '共治': ['council','星辰议会','THE COUNCIL'],
+  '集权': ['sovereign','星海主权','THE SOVEREIGN'],
+  '守望': ['citadel','黄昏堡垒','THE CITADEL'],
+  '扩张': ['voyager','星海远航','THE VOYAGER'],
+  '开放': ['harbor','潮汐港湾','THE HARBOR'],
+  '内聚': ['archive','共同记忆','THE ARCHIVE'],
+  '实证': ['observer','星象观测者','THE OBSERVER'],
+  '信念': ['flame','永恒誓焰','THE FLAME'],
+});
+function tarotForResult(result) {
+  const top = result.dominant[0]?.name;
+  // A balanced result has no unequivocal primary ethos: use a neutral council illustration as art only.
+  const entry = tarotByEthos[top] || tarotByEthos['共治'];
+  return { key: entry[0], name: top ? entry[1] : '留白星图', english: entry[2], neutral: !top,
+    url: `./assets/tarot/${entry[0]}.webp` };
+}
 const descriptions = {
   共治:'重要的决定，应该留给更多人共同参与。你在意声音是否被听见，也在意权力能否被约束。',
   集权:'风暴来临时，总要有人接过船舵。你偏向清晰的职责与有行动力的决策中心。',
@@ -54,50 +72,53 @@ function finish(){state.result=scoreSession(state.session);state.commentary=buil
 function renderResult(){
   const r=state.result,c=state.commentary;
   const configured=false;
-  main.innerHTML=`<section class="result fade-in"><div class="result-header"><img src="./assets/result-emblem.webp" alt="文明徽章"><div><span class="eyebrow">YOUR CIVILIZATION · ${e(r.code)}</span><h1>${e(r.title)}</h1><p>${e(r.subtitle)}</p></div></div><div class="result-v22-hero"><div class="result-visual" role="img" aria-label="${e(r.title)}文明档案卡片"><div class="result-visual-title">${e(r.title)}</div><div class="result-visual-slot slot-one">${e(r.civics[0]?.name || '远航者')}</div><div class="result-visual-slot slot-two">${e(r.civics[1]?.name || '星海旅人')}</div><div class="result-visual-slot slot-three">${e(r.code)} · YOUR CIVILIZATION</div></div><div class="result-v22-intro"><span class="eyebrow">YOUR STARBOUND CIVILIZATION</span><h2>每段航程，<br>都值得被记录。</h2><p>由你的回答生成思潮光谱与国策组合。点击下方按钮，就能将这份文明档案保存为图片。</p><button class="button" data-action="download"><img class="button-icon" src="./assets/icon-download.webp" alt="">保存文明纪念卡 ↓</button></div></div><div class="result-grid"><section class="result-box"><div class="box-heading"><h2>你的思潮光谱</h2><span class="tiny-label">ETHOS</span></div>${r.axes.map(a=>`<div class="axis"><div class="axis-labels"><span class="${a.leftPercent>=a.rightPercent?'emphasis':''}">${e(a.left)}</span><span class="${a.rightPercent>=a.leftPercent?'emphasis':''}">${e(a.right)}</span></div><div class="axis-bar" role="img" aria-label="${e(a.left)} ${a.leftPercent}%，${e(a.right)} ${a.rightPercent}%"><span class="axis-left" style="width:${a.leftPercent}%"></span><span class="axis-right" style="width:${a.rightPercent}%"></span></div><div class="axis-meta"><span>${a.leftPercent}%</span><span>${a.evidenceCount} 次情境选择</span><span>${a.rightPercent}%</span></div></div>`).join('')}</section><section class="result-box"><div class="box-heading"><h2>你的文明国策</h2><span class="tiny-label">CIVICS</span></div>${r.civics.map((x,i)=>`<article class="civic"><img src="./assets/${icons[r.dominant[i]?.axisId]||'axis-governance'}.webp" alt=""><div><h3>${e(x.name)}</h3><p>${e(x.description)}</p></div></article>`).join('')}<p class="result-footnote">国策由你的思潮组合生成，是这场银河角色扮演的设定。</p></section></div><section class="result-box commentary-box"><div class="box-heading"><h2>酒保的临别赠言</h2><span class="source-badge">${c.source==='ai'?'DEEPSEEK · AI 评语':'柚灯 · 本地评语'}</span></div><div class="commentary-text"><h3>${e(c.headline)}</h3>${c.paragraphs.map(p=>`<p>${e(p)}</p>`).join('')}${c.quote?`<blockquote>“${e(c.quote)}”</blockquote>`:''}</div><p class="result-footnote">这份酒保评语在浏览器内生成，不需要账户，不上传你的回答。</p></section><div class="result-bottom"><button class="text-button" data-action="archive">翻阅其他思潮档案 ↗</button><div><button class="button secondary" data-action="download">下载文明卡 ↓</button><button class="button secondary" data-action="restart">再来一杯 ↻</button></div></div><p class="result-footnote">分数是本次情境回答的倾向分布，不代表概率或测量准确率。这是借鉴太空策略游戏的原创娱乐测试，不是心理诊断，也不定义你的现实政治身份。开放文字与趣味题不改变分数。</p></section>`;
+  const tarot = tarotForResult(r);
+  main.innerHTML=`<section class="result fade-in"><div class="result-header"><img src="./assets/result-emblem.webp" alt="文明徽章"><div><span class="eyebrow">YOUR CIVILIZATION · ${e(r.code)}</span><h1>${e(r.title)}</h1><p>${e(r.subtitle)}</p></div></div><div class="result-v22-hero tarot-result-hero"><figure class="tarot-result-frame"><img class="tarot-result-image" src="${tarot.url}" alt="${e(tarot.name)}新艺术运动塔罗牌" width="841" height="1870"><figcaption>VOL. 001 · ${e(tarot.english)} · ${e(tarot.name)}</figcaption></figure><div class="result-v22-intro"><span class="eyebrow">YOUR STARBOUND TAROT</span><h2>你的文明，<br>化作一张<em>塔罗牌</em>。</h2><p>这幅石版画风格的纪念牌取自你本次${tarot.neutral?'相对均衡的答案，以议会星图作为装饰':'最突出的「'+e(r.dominant[0].name)+'」思潮'}。牌面是象征性插画，详细结果、国策与酒保评语仍以文字为准。</p><div class="tarot-motto">✦ ${e(tarot.name)} <span>·</span> ${e(r.civics[0]?.name||'留白公约')}</div><button class="button" data-action="download"><img class="button-icon" src="./assets/icon-download.webp" alt="">保存专属塔罗牌 ↓</button><p class="tarot-hint">下载图片会在牌面下方附上中文结果，不遮挡插画原有的英文铭文。</p></div></div><div class="result-grid"><section class="result-box"><div class="box-heading"><h2>你的思潮光谱</h2><span class="tiny-label">ETHOS</span></div>${r.axes.map(a=>`<div class="axis"><div class="axis-labels"><span class="${a.leftPercent>=a.rightPercent?'emphasis':''}">${e(a.left)}</span><span class="${a.rightPercent>=a.leftPercent?'emphasis':''}">${e(a.right)}</span></div><div class="axis-bar" role="img" aria-label="${e(a.left)} ${a.leftPercent}%，${e(a.right)} ${a.rightPercent}%"><span class="axis-left" style="width:${a.leftPercent}%"></span><span class="axis-right" style="width:${a.rightPercent}%"></span></div><div class="axis-meta"><span>${a.leftPercent}%</span><span>${a.evidenceCount} 次情境选择</span><span>${a.rightPercent}%</span></div></div>`).join('')}</section><section class="result-box"><div class="box-heading"><h2>你的文明国策</h2><span class="tiny-label">CIVICS</span></div>${r.civics.map((x,i)=>`<article class="civic"><img src="./assets/${icons[r.dominant[i]?.axisId]||'axis-governance'}.webp" alt=""><div><h3>${e(x.name)}</h3><p>${e(x.description)}</p></div></article>`).join('')}<p class="result-footnote">国策由你的思潮组合生成，是这场银河角色扮演的设定。</p></section></div><section class="result-box commentary-box"><div class="box-heading"><h2>酒保的临别赠言</h2><span class="source-badge">${c.source==='ai'?'DEEPSEEK · AI 评语':'柚灯 · 本地评语'}</span></div><div class="commentary-text"><h3>${e(c.headline)}</h3>${c.paragraphs.map(p=>`<p>${e(p)}</p>`).join('')}${c.quote?`<blockquote>“${e(c.quote)}”</blockquote>`:''}</div><p class="result-footnote">这份酒保评语在浏览器内生成，不需要账户，不上传你的回答。</p></section><div class="result-bottom"><button class="text-button" data-action="archive">翻阅其他思潮档案 ↗</button><div><button class="button secondary" data-action="download">下载文明卡 ↓</button><button class="button secondary" data-action="restart">再来一杯 ↻</button></div></div><p class="result-footnote">分数是本次情境回答的倾向分布，不代表概率或测量准确率。这是借鉴太空策略游戏的原创娱乐测试，不是心理诊断，也不定义你的现实政治身份。开放文字与趣味题不改变分数。</p></section>`;
 }
 function renderArchive(){
-  main.innerHTML=`<section class="archive fade-in"><span class="eyebrow">THE CIVILIZATION ARCHIVE</span><h1>同一片星空，不同的航向。</h1><p class="archive-intro">四条对立轴，八种文明思潮。它们描述你在特定情境里的取舍，<br>你可以同时理解两端，也可以随经历改变自己的答案。</p><div class="ethics-grid">${AXES.flatMap(a=>[a.left,a.right].map((name,i)=>`<button class="ethic-card" data-ethic="${e(name)}"><img src="./assets/${icons[a.id]}.webp" alt=""><h2>${e(name)}</h2><p>${e(descriptions[name])}</p><span class="tiny-label">${e(a.left)} / ${e(a.right)} <span>↗</span></span></button>`)).join('')}</div></section>`;
+  main.innerHTML=`<section class="archive tarot-archive fade-in"><span class="eyebrow">THE CIVILIZATION ARCHIVE · ART NOUVEAU</span><h1>八张星命牌，八条文明之路。</h1><p class="archive-intro">八种思潮各有一幅独立的 1890 年代石版画风格插画。轻触任意牌面，可以放大查看纹样与寓意。<br>这不是另一项测试：你的最终卡面仍由答题中的主导思潮决定。</p><div class="ethics-grid tarot-gallery">${AXES.flatMap(a=>[a.left,a.right].map(name=>{const t=tarotByEthos[name];return `<button class="ethic-card tarot-tile" data-ethic="${e(name)}" aria-label="查看${e(name)}的塔罗牌"><img src="./assets/tarot/${t[0]}.webp" loading="lazy" alt="${e(name)} · ${e(t[1])}塔罗牌" width="841" height="1870"><span class="tarot-tile-info"><strong>${e(name)} · ${e(t[1])}</strong><small>${e(descriptions[name])}</small><span class="tarot-tile-link">查看牌面与寓意 ↗</span></span></button>`})).join('')}</div></section>`;
 }
 function requestRestart(){showDialog('<h2>开启另一场星港访谈？</h2><p>新的航程会重新抽取问题。你可以先下载这一份文明卡，下一场访谈会替换当前结果。</p><div class="dialog-actions"><button class="button secondary" data-action="close-dialog">留在这里</button><button class="button" data-action="confirm-restart">再来一杯 →</button></div>');}
 function startNew(){state.session=createSession();state.selected=null;state.text='';state.result=null;state.commentary=null;state.aiBusy=false;state.aiError='';dialog.close();setPage('question');}
 async function downloadCard(){
   const r=state.result;
   if(!r)return;
+  const tarot=tarotForResult(r);
   const image=new Image();
-  image.src='./assets/result-card-v22.webp';
+  image.src=tarot.url;
   try{
     await image.decode();
     const canvas=document.createElement('canvas');
-    canvas.width=900;canvas.height=1125;
+    const w=841,h=1870,extra=240;
+    canvas.width=w;canvas.height=h+extra;
     const ctx=canvas.getContext('2d');
-    ctx.drawImage(image,0,0,900,1125);
-    ctx.textAlign='center';
-    ctx.shadowColor='rgba(0,0,0,.7)';ctx.shadowBlur=8;
-    ctx.fillStyle='#f5e3b9';ctx.font='bold 43px "Songti SC","Microsoft YaHei",serif';
-    ctx.fillText(r.title.length>15?r.title.slice(0,15):r.title,450,535,620);
-    ctx.fillStyle='#f0e9db';ctx.font='bold 31px "Microsoft YaHei",sans-serif';
-    ctx.fillText(r.civics[0]?.name||'星际远行者',500,691,470);
-    ctx.fillText(r.civics[1]?.name||'星海旅人',500,808,470);
-    ctx.font='20px sans-serif';ctx.fillStyle='#e5c18c';
-    ctx.fillText(`${r.code} · 暮灯星栈`,505,921,480);
+    ctx.fillStyle='#f2dfb8';ctx.fillRect(0,0,w,h+extra);
+    ctx.drawImage(image,0,0,w,h);
+    ctx.fillStyle='#efe0bc';ctx.fillRect(0,h,w,extra);
+    ctx.strokeStyle='#8f6a30';ctx.lineWidth=3;ctx.strokeRect(20,h+10,w-40,extra-24);
+    ctx.strokeStyle='#b99759';ctx.lineWidth=1;ctx.strokeRect(29,h+18,w-58,extra-40);
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillStyle='#1c3442';ctx.font='bold 39px "Songti SC","Noto Serif CJK SC","SimSun",serif';
+    ctx.fillText(r.title, w/2,h+78,w-100);
+    ctx.fillStyle='#4c554c';ctx.font='25px "Songti SC","Microsoft YaHei",sans-serif';
+    ctx.fillText((r.civics.map(x=>x.name).join(' · ')||'文明之星'),w/2,h+139,w-120);
+    ctx.fillStyle='#77613e';ctx.font='22px "Songti SC",serif';
+    ctx.fillText('✦  暮灯星栈  ·  DUSKLIGHT TAVERN  ✦',w/2,h+200,w-100);
     canvas.toBlob(blob=>{
       if(!blob){toast('下载失败，请重试。');return;}
       const link=document.createElement('a');const url=URL.createObjectURL(blob);
-      link.href=url;link.download=`暮灯星栈-${r.title}.png`;
+      link.href=url;link.download=`暮灯星栈-塔罗牌-${r.title}.png`;
       document.body.append(link);link.click();link.remove();
       setTimeout(()=>URL.revokeObjectURL(url),4000);
-      toast('文明卡 PNG 已生成，欢迎分享。');
+      toast('塔罗牌 PNG 已生成，欢迎分享。');
     },'image/png');
-  }catch(error){
-    toast('纪念卡图片未加载完成，请刷新后重试。');
-  }
+  }catch(error){toast('塔罗牌暂未加载完成，请刷新后重试。');}
 }
 
 document.addEventListener('click',event=>{
   const option=event.target.closest('[data-option]');
   if(option){state.selected=option.dataset.option;document.querySelectorAll('.option').forEach(b=>{const selected=b.dataset.option===state.selected;b.classList.toggle('selected',selected);b.setAttribute('aria-pressed',String(selected));});document.querySelector('#question-error').textContent='';return;}
-  const ethic=event.target.closest('[data-ethic]');if(ethic){const name=ethic.dataset.ethic;showDialog(`<h2>${e(name)}</h2><p>${e(descriptions[name])}</p><p>思潮不是固定标签。同一人在不同问题里，可能选择这条轴的不同方向。结果会综合你的情境选择，而开放回答不参与计分。</p>`);return;}
+  const ethic=event.target.closest('[data-ethic]');if(ethic){const name=ethic.dataset.ethic;const t=tarotByEthos[name];showDialog(`<div class="tarot-modal"><img src="./assets/tarot/${t[0]}.webp" width="841" height="1870" alt="${e(name)}塔罗牌"><div><span class="eyebrow">${e(t[2])}</span><h2>${e(name)} · ${e(t[1])}</h2><p>${e(descriptions[name])}</p><p>这张牌用场景、星象与纹样描绘一种文明取向，并不是对现实政治身份的判断。测评会综合所有情境选择。</p></div></div>`);return;}
   const button=event.target.closest('[data-action]');if(!button)return;event.preventDefault();
   switch(button.dataset.action){
     case 'home':setPage('home');break;
