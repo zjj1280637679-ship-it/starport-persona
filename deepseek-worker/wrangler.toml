@@ -4,7 +4,7 @@ compatibility_date = "2026-10-13"
 
 # Public configuration only. DO NOT commit API credentials or Turnstile secret here.
 [vars]
-AI_ENABLED = "false"
+AI_ENABLED = "true"
 DEEPSEEK_MODEL = "deepseek-flash"
 ALLOWED_ORIGIN = "https://zjj1280637679-ship-it.github.io"
 
