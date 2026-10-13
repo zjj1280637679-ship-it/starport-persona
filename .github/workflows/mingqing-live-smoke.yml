@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - '.github/workflows/mingqing-live-smoke.yml'
+      - 'mingqing-mirror/app.js'
+      - 'mingqing-mirror/index.html'
+      - 'mingqing-mirror/styles.css'
 permissions:
   contents: read
 jobs:
@@ -33,7 +36,9 @@ jobs:
           for attempt in range(18):
               st,_,page=request(site)
               ct,_,cfg=request(site+'ai-config.js')
-              if st==200 and ct==200 and 'starport-deepseek-gateway.zjj1280637679.workers.dev' in cfg and 'turnstileSiteKey:' in cfg and 'turnstileSiteKey:""' not in cfg:break
+              js_status,_,js=request(site+'app.js')
+              css_status,_,css=request(site+'styles.css')
+              if st==200 and ct==200 and js_status==200 and css_status==200 and '>攻略</a>' in page and 'Home is intentionally an introduction only' in js and 'Accessible answer controls on the parchment' in css and 'starport-deepseek-gateway.zjj1280637679.workers.dev' in cfg and 'turnstileSiteKey:' in cfg and 'turnstileSiteKey:""' not in cfg:break
               print('Pages propagation pending',attempt+1,st,ct,flush=True);time.sleep(10)
           else:raise AssertionError('Live GitHub Pages frontend is not ready')
           assert 'id="app"' in page and 'app.js' in page, 'HTML bootstrap missing'
@@ -75,10 +80,38 @@ jobs:
           page.on('request',r=>{if(r.url().includes('/api/analyze')||r.url().includes('/api/rewrite')||r.url().includes('/api/commentary'))paidCalls.push(r.url())});
           const response=await page.goto(process.env.SITE_URL,{waitUntil:'domcontentloaded',timeout:45000});
           if(response?.status()!==200)throw Error('Live page not HTTP 200');
+          // Landing page contains only introductory hero and one entry action.
+          if(await page.locator('.hero-actions [data-action="enter"]').count()!==1)throw Error('Landing page should have exactly one entry action');
+          if(await page.locator('main .section').count()!==0)throw Error('Guide sections leaked into landing page');
+          await page.screenshot({path:'mingqing-home-mobile.png',fullPage:true});
+          await page.locator('nav a[href="#about"]').click();
+          await page.getByText('四镜相合，方见其人').waitFor({state:'visible'});
+          await page.getByText('美术升级：图形 → 图片 → GIF').waitFor({state:'visible'});
+          if(await page.locator('.mode-grid').count())throw Error('Game entry options should not be mixed with guide');
+          await page.locator('nav a[href="#home"]').click();
           await page.getByRole('button',{name:/启封入卷/}).click();
           await page.locator('#ai-consent').waitFor({state:'visible'});
           await page.getByRole('button',{name:/速鉴十二问/}).click();
           await page.locator('#answer').waitFor({state:'visible'});
+          const pills=page.locator('.quiz-card .pill-row button');
+          if(await pills.count()!==3)throw Error('Expected exactly three answer tendency buttons');
+          function luminance(rgb){
+            const v=rgb.match(/[\\d.]+/g)?.slice(0,3).map(x=>Number(x)/255)??[];
+            if(v.length!==3)throw Error('Unrecognized computed color '+rgb);
+            const p=v.map(n=>n<=.04045?n/12.92:((n+.055)/1.055)**2.4);
+            return p[0]*.2126+p[1]*.7152+p[2]*.0722;
+          }
+          async function checkContrast(el,description){
+            const v=await el.evaluate(x=>{const s=getComputedStyle(x);return {color:s.color,bg:s.backgroundColor}});
+            const a=luminance(v.color),b=luminance(v.bg);
+            const ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+            if(ratio<4.5)throw Error(description+' insufficient contrast '+ratio.toFixed(2)+' / '+JSON.stringify(v));
+            console.log('PASS: '+description+' contrast '+ratio.toFixed(2)+':1');
+          }
+          for(let i=0;i<3;i++)await checkContrast(pills.nth(i),'unselected tendency '+i);
+          await pills.first().click();
+          await checkContrast(page.locator('.quiz-card .pill-row button.selected'),'selected tendency');
+          await page.screenshot({path:'mingqing-question-buttons.png',fullPage:true});
           await page.locator('#answer').fill('我会先听取各方意见，并核查实际账目。');
           await page.getByRole('button',{name:/下一题/}).click();
           await page.getByText('第 2 / 12 问').waitFor({state:'visible',timeout:20000});
@@ -94,7 +127,7 @@ jobs:
           await page.screenshot({path:'mingqing-mobile-test.png',fullPage:true});
           await page.locator('a[href="#archive"]').last().click();
           await page.locator('.archive-row').first().waitFor({state:'visible',timeout:15000});
-          console.log('PASS: All 12 questions completed, historical result rendered and archive recorded.');
+          console.log('PASS: Minimal homepage; isolated guide; button contrast; all 12 questions completed, historical result rendered and archive recorded.');
           if(errors.length)throw Error('Browser JS exceptions: '+errors.join(' | '));
           if(paidCalls.length)throw Error('Opt-out incorrectly sent paid API requests: '+paidCalls.join(','));
           console.log('PASS: Mobile browser rendered; navigation, test choices and second question work.');
@@ -106,5 +139,8 @@ jobs:
         if: always()
         with:
           name: mingqing-mobile-smoke
-          path: mingqing-mobile-test.png
+          path: |
+            mingqing-home-mobile.png
+            mingqing-question-buttons.png
+            mingqing-mobile-test.png
           if-no-files-found: ignore
