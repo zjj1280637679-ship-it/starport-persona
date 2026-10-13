@@ -3,5 +3,5 @@
 // 不得将 DeepSeek API Key、Turnstile Secret Key 填在本文件或任何静态网页中。
 export const AI_CONFIG={
  endpoint:"https://starport-deepseek-gateway.zjj1280637679.workers.dev",
- turnstileSiteKey:""
+ turnstileSiteKey:"0x4AAAAAAFVa3XMIy4rCu3G"
 };
