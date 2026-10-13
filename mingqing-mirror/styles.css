@@ -62,3 +62,13 @@
   .quiz-card .pill-row .btn{min-height:58px;padding:9px 5px;font-size:12px}
   .resume-draft{flex-direction:column;align-items:stretch}
 }
+
+/* AI-assisted by default: visible disclosure and optional offline escape hatch.
+   No opt-in checkbox or modal blocks entry into either quiz mode. */
+.ai-mode{max-width:880px;margin:20px auto 14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:18px;border:1px solid #bd9a67;background:#182b31;border-radius:5px}
+.ai-mode-copy{min-width:0}
+.ai-mode-copy strong{display:block;font-size:15px;color:#f8dfb4;font-weight:700;margin-bottom:7px}
+.ai-mode-copy p{color:#ddd1bf;font-size:12px;line-height:1.85;margin:0}
+.ai-mode .btn{flex-shrink:0;background:#f4e7d0;color:#2a251e;border:1px solid #d3b28a;font-weight:700}
+.ai-mode .btn:hover{background:#fff4e2;color:#211b16}
+@media(max-width:600px){.ai-mode{align-items:stretch;flex-direction:column;gap:13px;padding:17px}.ai-mode .btn{align-self:flex-start;min-height:42px}}
