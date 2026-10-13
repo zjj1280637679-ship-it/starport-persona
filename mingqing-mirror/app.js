@@ -1,4 +1,4 @@
-import {AXES,QUESTIONS,QUESTION_MAP,CHARACTERS,MODES} from "./data.js";
+import {AXES,QUESTIONS,QUESTION_MAP,CHARACTERS,MODES,CASE_BRIEFS} from "./data.js";
 import {art} from "./media.js";
 import {aiEnabled,analyzeAnswer,rewriteQuestion,requestCommentary} from "./ai-client.js";
 const KEY="mingqing-mirror:records-v1",DRAFT="mingqing-mirror:draft-v1";
@@ -49,7 +49,7 @@ function intro(){
  return '<section class="hero"><div class="hero-text"><div class="kicker">LATE MING · EARLY QING / HISTORICAL MIRROR</div><h1>明清<em>人物镜</em></h1><p class="hero-sub">如果甲申之变再临，你会成为谁？</p><p class="lead">置身明清易代的关键抉择，在人格、政略、历史阵营与智谋之间寻找与你最接近的历史人物镜像。你的答案将决定乱世之中的另一种可能。</p><div class="hero-actions"><button class="btn primary" data-action="enter">启封入卷　↗</button></div><p class="note" style="margin-top:26px">免费体验 · 无需账号或自备 API · '+(aiEnabled?'默认 DeepSeek AI 辅助 · 可改用离线':'可离线完成测试')+'</p></div><div class="hero-art">'+art("home.hero","hero")+'<div class="stamp">乱世鉴书</div></div></section>';
 }
 function setup(){
- return header("CHOOSE YOUR CHRONICLE","择卷入史","从短暂一瞥到一部完整的乱世问答，选择自己的入局方式。")+
+ return header("CHOOSE YOUR CHRONICLE","择卷入史","你将作为乱世鉴司的代议者进入一系列独立史案。每题先交代临时身份、时地、任务与权限，再由你作决定；不同案件不强行拼成同一段时间线。")+
  (state.draft?'<div class="resume-draft"><p>检测到尚未完成的卷宗（已答 '+state.draft.step+' 题）。</p><button class="btn primary" data-action="continue">继续上次测试 →</button></div>':'')+
  '<div class="mode-grid"><button class="mode" data-action="start" data-mode="quick"><div class="mode-tag">QUICK · 12</div><span class="corner">简</span><strong>速鉴十二问</strong><p>四个维度各取三题。适合初见乱世的游客，结果更接近趣味速写。</p><footer>约 6–10 分钟 · 启封 →</footer></button><button class="mode" data-action="start" data-mode="standard"><div class="mode-tag">STANDARD · 28</div><span class="corner">详</span><strong>史鉴二十八问</strong><p>每一类七问；涵盖开局、政略、认同与可校准的谋略题，提供较完整的镜像画像。</p><footer>约 15–25 分钟 · 启封 →</footer></button></div>'+
  (aiEnabled?'<div class="ai-mode" aria-live="polite"><div class="ai-mode-copy"><strong>'+(state.setupOffline?'当前：纯离线模式':'当前：DeepSeek AI 辅助（默认开启）')+'</strong><p>'+(state.setupOffline?'回答仅用于浏览器内的本地词库评分，不会请求 DeepSeek。':'选择任一模式并开始测试后，你提交的自由回答将通过 Cloudflare Worker 发送至 DeepSeek 进行语义分析及有限的题目措辞改写；未提交的文字不发送。AI 不可用时自动回退离线评分。')+'</p></div><button type="button" class="btn small" data-action="toggle-ai" aria-label="'+(state.setupOffline?'恢复 DeepSeek AI 辅助':'改用纯离线模式')+'">'+(state.setupOffline?'恢复 AI 辅助':'改用纯离线模式')+'</button></div>':'')+
@@ -76,11 +76,13 @@ function quiz(){
  if(!state.draft)return setup();
  const ids=currentIds(), q=currentQuestion();if(!q)return header("ERROR","卷宗暂不可读");
  const a=qAnswer(q),m=MODES[state.draft.mode],qShown=safeRewrite(q),wit=q.group==="wit",i=state.draft.step;
+ const brief=CASE_BRIEFS[q.id];
+ const dossier=brief?'<div class="case-dossier"><div class="case-dossier-head">入局档案 · '+esc(brief.place)+'</div><div class="case-role"><span>本案身份</span><strong>'+esc(brief.role)+'</strong></div><p><b>前情与任务：</b>'+esc(brief.mission)+'</p><p><b>权限与代价：</b>'+esc(brief.scope)+'</p></div>':'';
  const options=wit?'<div class="choice-list" role="group" aria-label="智谋题选项">'+q.options.map((opt,n)=>'<button class="choice '+(String(a.choice)===String(n)?"selected":"")+'" data-action="choice" data-value="'+n+'"><span>'+String.fromCharCode(65+n)+'</span>'+esc(opt)+'</button>').join("")+'</div>': '<textarea class="answerbox" id="answer" maxlength="1800" placeholder="写下你会如何处理，以及做出这个判断的理由……">'+esc(a.text)+'</textarea><p class="muted" style="font-size:12px;margin:7px 0">开放作答 · '+(state.draft.aiConsent&&aiEnabled?'默认使用 DeepSeek AI 语义分析；调用失败自动改用本地词库。':'当前使用本地词库辅助识别，不上传本题回答。')+'</p>'+leanUI(q,a);
- return '<div class="quiz-layout"><div class="quiz-head"><div class="kicker">'+GROUPS[q.group]+'</div><div class="state-line">第 '+(i+1)+' / '+ids.length+' 问 · '+m.title+'</div></div><div class="progress-track"><div class="progress-fill" style="width:'+((i+1)/ids.length*100)+'%"></div></div>'+
- '<article class="paper quiz-card">'+art("question."+q.id,"scene")+ '<div class="paper-content"><div class="question-no">卷 '+String(i+1).padStart(2,"0")+' / '+String(ids.length).padStart(2,"0")+'　·　'+GROUPS[q.group]+'</div><h2>'+esc(qShown.title)+'</h2><p class="story">'+esc(qShown.scene)+'</p><div class="divider"></div><p class="question-prompt">'+esc(qShown.ask)+'</p>'+options+'</div></article>'+
+ return '<div class="quiz-layout">'+(i===0?'<div class="case-opening"><strong>乱世鉴司 · 入局说明</strong><p>你是史案中的临时决策者，不是固定身份的皇帝或将军。每个案件都会先告诉你“我是谁、在哪里、为什么要决定”；进入下一案时身份可能变化。以下情境均为架空推演，选项没有预设的政治标准答案。</p></div>':'')+'<div class="quiz-head"><div class="kicker">'+GROUPS[q.group]+'</div><div class="state-line">第 '+(i+1)+' / '+ids.length+' 问 · '+m.title+'</div></div><div class="progress-track"><div class="progress-fill" style="width:'+((i+1)/ids.length*100)+'%"></div></div>'+
+ '<article class="paper quiz-card">'+art("question."+q.id,"scene")+ '<div class="paper-content"><div class="question-no">卷 '+String(i+1).padStart(2,"0")+' / '+String(ids.length).padStart(2,"0")+'　·　'+GROUPS[q.group]+'</div><h2>'+esc(qShown.title)+'</h2>'+dossier+'<p class="story">'+esc(qShown.scene)+'</p><div class="divider"></div><p class="question-prompt">'+esc(qShown.ask)+'</p>'+options+'</div></article>'+
  '<div class="quiz-actions"><button class="btn" data-action="previous" '+(i===0?"disabled":"")+'>← 上一题</button><div class="right"><button class="btn ghost" data-action="leave">暂离存卷</button><button class="btn primary" data-action="next">'+(i===ids.length-1?"合卷照鉴 →":"下一题 →")+'</button></div></div>'+
- '<p class="note">部分题目可能在找到可靠的个人原文句柄时做等义措辞替换；无可靠句柄则使用原题。智谋题条件与答案不可改。</p></div>';
+ '<p class="note">本题是独立历史模拟案件。前题答案不改变本题的身份、事件或评分；只可能在可靠原文句柄存在时等义改写部分措辞。智谋题条件与答案不可改。</p></div>';
 }
 function leanUI(q,a){let p=POLES[q.axis]||["暂不确定","有所偏向"];return '<div class="divider"></div><div class="muted" style="font-size:12px;margin-bottom:9px">辅助倾向（可选）· 帮助离线模式识别文字之外的选择</div><div class="pill-row"><button class="btn small '+(a.lean==="left"?"selected":"")+'" data-action="lean" data-value="left">'+esc(p[0])+'</button><button class="btn small '+(a.lean==="neutral"?"selected":"")+'" data-action="lean" data-value="neutral">暂不确定</button><button class="btn small '+(a.lean==="right"?"selected":"")+'" data-action="lean" data-value="right">'+esc(p[1])+'</button></div>'}
 function polarity(term,text){
