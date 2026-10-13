@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/mingqing-live-smoke.yml'
       - 'mingqing-mirror/app.js'
+      - 'mingqing-mirror/data.js'
       - 'mingqing-mirror/index.html'
       - 'mingqing-mirror/styles.css'
 permissions:
@@ -63,6 +64,22 @@ jobs:
           assert st==403 and 'challenge_required' in text,(st,text)
           print('PASS: missing Turnstile token rejected; no paid DeepSeek call')
           PY
+      - name: Validate all historical case dossiers and original scoring dimensions
+        run: |
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          const source=readFileSync('mingqing-mirror/data.js','utf8');
+          const {QUESTIONS,CASE_BRIEFS,MODES}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+          if(QUESTIONS.length!==28||Object.keys(CASE_BRIEFS).length!==28)throw Error('Expected 28 original questions and 28 contextual dossiers');
+          for(const q of QUESTIONS){
+            const b=CASE_BRIEFS[q.id];
+            if(!b||[b.place,b.role,b.mission,b.scope].some(x=>typeof x!=='string'||x.length<8))throw Error('Missing case identity or mandate for '+q.id);
+            if(!q.title||!q.scene||!q.ask||!q.group||!q.axis)throw Error('Question fields damaged: '+q.id);
+            if(q.group==='wit'&&(q.options?.length!==4||!Number.isInteger(q.correct)))throw Error('Wit answer altered: '+q.id);
+          }
+          if(MODES.quick.ids.length!==12||MODES.standard.ids.length!==28)throw Error('Question modes changed');
+          console.log('PASS: All 28 cases have roles, places, missions and stakes; quiz modes/answer keys remain structurally intact.');
+          JS
       - name: Install Playwright browser
         run: |
           npm install --no-save playwright@1.56.1
@@ -98,6 +115,12 @@ jobs:
           const draftOffline=await page.evaluate(()=>JSON.parse(localStorage.getItem('mingqing-mirror:draft-v1')));
           if(draftOffline?.aiConsent!==false)throw Error('Offline switch did not disable AI calls');
           await page.locator('#answer').waitFor({state:'visible'});
+          await page.getByText('乱世鉴司 · 入局说明').waitFor({state:'visible'});
+          const roleOne=await page.locator('.case-role strong').textContent();
+          if(!roleOne?.trim())throw Error('First question has no declared identity');
+          if(await page.locator('.case-dossier p').count()!==2)throw Error('Question needs mission and scope');
+          await page.getByText('前情与任务：').waitFor({state:'visible'});
+          await page.getByText('权限与代价：').waitFor({state:'visible'});
           const pills=page.locator('.quiz-card .pill-row button');
           if(await pills.count()!==3)throw Error('Expected exactly three answer tendency buttons');
           function luminance(rgb){
@@ -120,6 +143,8 @@ jobs:
           await page.locator('#answer').fill('我会先听取各方意见，并核查实际账目。');
           await page.getByRole('button',{name:/下一题/}).click();
           await page.getByText('第 2 / 12 问').waitFor({state:'visible',timeout:20000});
+          const roleTwo=await page.locator('.case-role strong').textContent();
+          if(!roleTwo?.trim()||roleOne===roleTwo)throw Error('Scenario identity did not change between distinct dossiers');
           for(let i=2;i<=12;i++){
             const answer=page.locator('#answer');
             if(await answer.count())await answer.fill('我会依据事实，听取各方意见后制定下一步计划。');
@@ -132,7 +157,7 @@ jobs:
           await page.screenshot({path:'mingqing-mobile-test.png',fullPage:true});
           await page.locator('a[href="#archive"]').last().click();
           await page.locator('.archive-row').first().waitFor({state:'visible',timeout:15000});
-          console.log('PASS: Minimal homepage; isolated guide; button contrast; all 12 questions completed, historical result rendered and archive recorded.');
+          console.log('PASS: Intro and two distinct case roles; minimal homepage; isolated guide; button contrast; all 12 questions completed and archived.');
           if(errors.length)throw Error('Browser JS exceptions: '+errors.join(' | '));
           if(paidCalls.length)throw Error('Opt-out incorrectly sent paid API requests: '+paidCalls.join(','));
           console.log('PASS: Mobile browser rendered; navigation, test choices and second question work.');
@@ -164,6 +189,14 @@ jobs:
           const after=await aiPage.evaluate(()=>JSON.parse(localStorage.getItem('mingqing-mirror:draft-v1')));
           if(!Object.values(after.answers).some(x=>x.ai?.quote==='听取各方意见'))throw Error('Mocked AI evidence not applied to scoring state');
           console.log('PASS: AI on by default: answer sent to mocked backend and its evidence saved.');
+          const standard=await browser.newPage({viewport:{width:390,height:844},isMobile:true});
+          await standard.goto(process.env.SITE_URL,{waitUntil:'domcontentloaded',timeout:45000});
+          await standard.getByRole('button',{name:/启封入卷/}).click();
+          await standard.getByRole('button',{name:/史鉴二十八问/}).click();
+          await standard.getByText('第 1 / 28 问').waitFor({state:'visible'});
+          if(await standard.locator('.case-dossier .case-role strong').count()!==1)throw Error('28-case mode missing role dossier');
+          console.log('PASS: 28-question mode also begins with explicit historical player identity.');
+          await standard.close();
           console.log('LIMIT: Real managed Turnstile challenge and paid DeepSeek response require verified visitor interaction.');
           await aiPage.close();
           await browser.close();
