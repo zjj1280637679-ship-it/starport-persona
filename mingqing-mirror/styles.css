@@ -72,3 +72,23 @@
 .ai-mode .btn{flex-shrink:0;background:#f4e7d0;color:#2a251e;border:1px solid #d3b28a;font-weight:700}
 .ai-mode .btn:hover{background:#fff4e2;color:#211b16}
 @media(max-width:600px){.ai-mode{align-items:stretch;flex-direction:column;gap:13px;padding:17px}.ai-mode .btn{align-self:flex-start;min-height:42px}}
+
+/* Historical case briefs: who the visitor is, where this takes place,
+   what authority they have, and why their choice matters. */
+.case-opening{border-left:3px solid #bc925c;background:#172630;padding:14px 18px;margin:8px 0 14px;color:#e9d8b9}
+.case-opening strong{font:600 15px var(--serif);color:#f1d4a6}
+.case-opening p{margin:6px 0 0;font-size:12px;line-height:1.85;color:#d0c1a8}
+.case-dossier{background:#ede0c5;border:1px solid #b69a6e;border-left:4px solid #875b3f;padding:15px 17px;margin:15px 0 19px;color:#322a21;border-radius:2px}
+.case-dossier-head{font-size:11px;font-weight:700;letter-spacing:.12em;color:#714a34;padding-bottom:8px;border-bottom:1px solid #bcaa88}
+.case-role{display:flex;align-items:baseline;gap:10px;margin:10px 0 8px;flex-wrap:wrap}
+.case-role span{font-size:11px;font-weight:700;color:#755a40}
+.case-role strong{font:700 18px var(--serif);color:#312720}
+.case-dossier p{font-size:13px;line-height:1.8;margin:8px 0;color:#44392c}
+.case-dossier p b{color:#493122}
+.quiz-card .story{line-height:1.9}
+@media(max-width:560px){
+ .case-opening{padding:12px 14px;margin-top:2px}
+ .case-dossier{padding:12px 13px;margin:13px 0 16px}
+ .case-role strong{font-size:16px}
+ .case-dossier p{font-size:12px;line-height:1.75}
+}
