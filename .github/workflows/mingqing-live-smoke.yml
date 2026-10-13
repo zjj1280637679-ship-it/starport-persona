@@ -27,9 +27,9 @@ jobs:
               r=urllib.request.Request(url,method=method,headers=headers or {},data=data)
               try:
                   with urllib.request.urlopen(r,timeout=20) as out:
-                      return out.status,dict(out.headers.items()),out.read().decode('utf8','replace')
+                      return out.status,{k.lower():v for k,v in out.headers.items()},out.read().decode('utf8','replace')
               except urllib.error.HTTPError as e:
-                  return e.code,dict(e.headers.items()),e.read().decode('utf8','replace')
+                  return e.code,{k.lower():v for k,v in e.headers.items()},e.read().decode('utf8','replace')
           for attempt in range(18):
               st,_,page=request(site)
               ct,_,cfg=request(site+'ai-config.js')
@@ -46,7 +46,7 @@ jobs:
           st,h,_=request(worker+'/api/analyze',method='OPTIONS',headers={'Origin':origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'})
           assert st==204 and h.get('access-control-allow-origin')==origin,(st,h)
           print('PASS: CORS preflight allowed')
-          body=b'{"questionId":"p1","answer":"测试不发起付费请求"}'
+          body=json.dumps({'questionId':'p1','answer':'test-no-paid-model-call'}).encode('utf-8')
           st,_,text=request(worker+'/api/analyze',method='POST',headers={'Origin':'https://untrusted.invalid','Content-Type':'application/json'},data=body)
           assert st==403 and 'origin_rejected' in text,(st,text)
           print('PASS: unknown Origin rejected')
