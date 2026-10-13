@@ -3,7 +3,7 @@ import {art} from "./media.js";
 import {aiEnabled,analyzeAnswer,rewriteQuestion,requestCommentary} from "./ai-client.js";
 const KEY="mingqing-mirror:records-v1",DRAFT="mingqing-mirror:draft-v1";
 const root=document.querySelector("#app");
-const state={draft:read(DRAFT,null),records:read(KEY,[]),showId:null};
+const state={draft:read(DRAFT,null),records:read(KEY,[]),showId:null,setupOffline:false};
 let submitBusy=false;
 function read(k,f){try{const v=JSON.parse(localStorage.getItem(k));return v??f}catch{return f}}
 function persist(){try{localStorage.setItem(DRAFT,JSON.stringify(state.draft));localStorage.setItem(KEY,JSON.stringify(state.records))}catch{}}
@@ -39,21 +39,21 @@ const SIGN={ei:"外向与内向互动偏好",sn:"经验与想象",tf:"决策依�
 function header(k,t,sub=""){return '<div class="page-head"><div class="kicker" style="justify-content:center">'+k+'</div><h1>'+t+'</h1><p>'+sub+'</p></div>'}
 function page(){let h=location.hash.replace(/^#/,"")||"home";return h}
 function navigate(id){location.hash="#"+id;if(page()===id)render();window.scrollTo({top:0,behavior:"instant"})}
-function start(mode){state.draft={mode,step:0,answers:{},aiConsent:!!(aiEnabled&&document.querySelector("#ai-consent")?.checked),rewriteCache:{},began:new Date().toISOString()};persist();navigate("quiz")}
+function start(mode){state.draft={mode,step:0,answers:{},aiConsent:Boolean(aiEnabled&&!state.setupOffline),rewriteCache:{},began:new Date().toISOString()};persist();navigate("quiz")}
 function currentIds(){return MODES[state.draft?.mode]?.ids||MODES.quick.ids}
 function currentQuestion(){return QUESTION_MAP.get(currentIds()[state.draft.step])}
 function qAnswer(q){return state.draft?.answers?.[q.id]||{text:"",lean:"",choice:""}}
 function intro(){
  // Home is intentionally an introduction only; game modes live in #setup,
  // and detailed mechanics / design notes live in #about (攻略).
- return '<section class="hero"><div class="hero-text"><div class="kicker">LATE MING · EARLY QING / HISTORICAL MIRROR</div><h1>明清<em>人物镜</em></h1><p class="hero-sub">如果甲申之变再临，你会成为谁？</p><p class="lead">置身明清易代的关键抉择，在人格、政略、历史阵营与智谋之间寻找与你最接近的历史人物镜像。你的答案将决定乱世之中的另一种可能。</p><div class="hero-actions"><button class="btn primary" data-action="enter">启封入卷　↗</button></div><p class="note" style="margin-top:26px">免费体验 · 无需账号或自备 API · '+(aiEnabled?'可选 DeepSeek AI 分析（需同意）':'可离线完成测试')+'</p></div><div class="hero-art">'+art("home.hero","hero")+'<div class="stamp">乱世鉴书</div></div></section>';
+ return '<section class="hero"><div class="hero-text"><div class="kicker">LATE MING · EARLY QING / HISTORICAL MIRROR</div><h1>明清<em>人物镜</em></h1><p class="hero-sub">如果甲申之变再临，你会成为谁？</p><p class="lead">置身明清易代的关键抉择，在人格、政略、历史阵营与智谋之间寻找与你最接近的历史人物镜像。你的答案将决定乱世之中的另一种可能。</p><div class="hero-actions"><button class="btn primary" data-action="enter">启封入卷　↗</button></div><p class="note" style="margin-top:26px">免费体验 · 无需账号或自备 API · '+(aiEnabled?'默认 DeepSeek AI 辅助 · 可改用离线':'可离线完成测试')+'</p></div><div class="hero-art">'+art("home.hero","hero")+'<div class="stamp">乱世鉴书</div></div></section>';
 }
 function setup(){
  return header("CHOOSE YOUR CHRONICLE","择卷入史","从短暂一瞥到一部完整的乱世问答，选择自己的入局方式。")+
  (state.draft?'<div class="resume-draft"><p>检测到尚未完成的卷宗（已答 '+state.draft.step+' 题）。</p><button class="btn primary" data-action="continue">继续上次测试 →</button></div>':'')+
  '<div class="mode-grid"><button class="mode" data-action="start" data-mode="quick"><div class="mode-tag">QUICK · 12</div><span class="corner">简</span><strong>速鉴十二问</strong><p>四个维度各取三题。适合初见乱世的游客，结果更接近趣味速写。</p><footer>约 6–10 分钟 · 启封 →</footer></button><button class="mode" data-action="start" data-mode="standard"><div class="mode-tag">STANDARD · 28</div><span class="corner">详</span><strong>史鉴二十八问</strong><p>每一类七问；涵盖开局、政略、认同与可校准的谋略题，提供较完整的镜像画像。</p><footer>约 15–25 分钟 · 启封 →</footer></button></div>'+
- (aiEnabled?'<div class="ai-consent"><label><input type="checkbox" id="ai-consent"/> 同意本次测试将填写的自由文本发往 DeepSeek，辅助语义分析与安全措辞改写。不勾选仍可完成离线测试。</label></div>':'')+
- '<p class="note" style="text-align:center">题目为架空历史情境，人物特征为游戏化史料推定。'+(aiEnabled?'只有勾选才会发送回答到 DeepSeek。':'当前无云端 AI 调用，回答保存在本机。')+'</p>';
+ (aiEnabled?'<div class="ai-mode" aria-live="polite"><div class="ai-mode-copy"><strong>'+(state.setupOffline?'当前：纯离线模式':'当前：DeepSeek AI 辅助（默认开启）')+'</strong><p>'+(state.setupOffline?'回答仅用于浏览器内的本地词库评分，不会请求 DeepSeek。':'选择任一模式并开始测试后，你提交的自由回答将通过 Cloudflare Worker 发送至 DeepSeek 进行语义分析及有限的题目措辞改写；未提交的文字不发送。AI 不可用时自动回退离线评分。')+'</p></div><button type="button" class="btn small" data-action="toggle-ai" aria-label="'+(state.setupOffline?'恢复 DeepSeek AI 辅助':'改用纯离线模式')+'">'+(state.setupOffline?'恢复 AI 辅助':'改用纯离线模式')+'</button></div>':'')+
+ '<p class="note" style="text-align:center">题目为架空历史情境，人物特征为游戏化史料推定。'+(aiEnabled?'AI 处理模式已在上方清楚标示，可在开始前切换。':'当前无云端 AI 调用，回答保存在本机。')+'</p>';
 }
 function safeRewrite(q){
  // 严格白名单。句柄必须是该游客之前答案中出现的原文，保持原题 ID 和评分元数据。
@@ -76,7 +76,7 @@ function quiz(){
  if(!state.draft)return setup();
  const ids=currentIds(), q=currentQuestion();if(!q)return header("ERROR","卷宗暂不可读");
  const a=qAnswer(q),m=MODES[state.draft.mode],qShown=safeRewrite(q),wit=q.group==="wit",i=state.draft.step;
- const options=wit?'<div class="choice-list" role="group" aria-label="智谋题选项">'+q.options.map((opt,n)=>'<button class="choice '+(String(a.choice)===String(n)?"selected":"")+'" data-action="choice" data-value="'+n+'"><span>'+String.fromCharCode(65+n)+'</span>'+esc(opt)+'</button>').join("")+'</div>': '<textarea class="answerbox" id="answer" maxlength="1800" placeholder="写下你会如何处理，以及做出这个判断的理由……">'+esc(a.text)+'</textarea><p class="muted" style="font-size:12px;margin:7px 0">开放作答 · 写具体理由更有利于未来 AI 分析。当前使用本地词库辅助识别。</p>'+leanUI(q,a);
+ const options=wit?'<div class="choice-list" role="group" aria-label="智谋题选项">'+q.options.map((opt,n)=>'<button class="choice '+(String(a.choice)===String(n)?"selected":"")+'" data-action="choice" data-value="'+n+'"><span>'+String.fromCharCode(65+n)+'</span>'+esc(opt)+'</button>').join("")+'</div>': '<textarea class="answerbox" id="answer" maxlength="1800" placeholder="写下你会如何处理，以及做出这个判断的理由……">'+esc(a.text)+'</textarea><p class="muted" style="font-size:12px;margin:7px 0">开放作答 · '+(state.draft.aiConsent&&aiEnabled?'默认使用 DeepSeek AI 语义分析；调用失败自动改用本地词库。':'当前使用本地词库辅助识别，不上传本题回答。')+'</p>'+leanUI(q,a);
  return '<div class="quiz-layout"><div class="quiz-head"><div class="kicker">'+GROUPS[q.group]+'</div><div class="state-line">第 '+(i+1)+' / '+ids.length+' 问 · '+m.title+'</div></div><div class="progress-track"><div class="progress-fill" style="width:'+((i+1)/ids.length*100)+'%"></div></div>'+
  '<article class="paper quiz-card">'+art("question."+q.id,"scene")+ '<div class="paper-content"><div class="question-no">卷 '+String(i+1).padStart(2,"0")+' / '+String(ids.length).padStart(2,"0")+'　·　'+GROUPS[q.group]+'</div><h2>'+esc(qShown.title)+'</h2><p class="story">'+esc(qShown.scene)+'</p><div class="divider"></div><p class="question-prompt">'+esc(qShown.ask)+'</p>'+options+'</div></article>'+
  '<div class="quiz-actions"><button class="btn" data-action="previous" '+(i===0?"disabled":"")+'>← 上一题</button><div class="right"><button class="btn ghost" data-action="leave">暂离存卷</button><button class="btn primary" data-action="next">'+(i===ids.length-1?"合卷照鉴 →":"下一题 →")+'</button></div></div>'+
@@ -171,7 +171,7 @@ function archive(){
 function about(){
  return header("FIELD GUIDE / 明清人物镜","游玩攻略","关于四镜评分、历史人物匹配与美术世界观的说明，均收纳于此。")+
  '<section class="section"><div class="kicker">FOUR MIRRORS</div><h2 class="section-title">四镜相合，方见其人</h2><div class="three-up"><div class="pane"><span class="pane-index">壹</span><h3>禀性与政略</h3><p>四组隐性人格偏好与六轴政治取向独立计算，不拿历史阵营代替性格。</p></div><div class="pane"><span class="pane-index">贰</span><h3>阵营与智谋</h3><p>血汉、血满、血回、血蒙为历史阵营共鸣的娱乐称谓；智谋题解锁人物地位。</p></div><div class="pane"><span class="pane-index">叁</span><h3>最近人物镜像</h3><p>先按智谋限制入池，再跨四维寻找最接近的人物，即使相似度不高，也照实说明。</p></div></div></section>'+
- '<section class="paper readable"><div class="paper-content"><h2>四维最近邻拟合</h2><p>人格四轴、政治六轴、四项历史阵营共鸣以及智谋表现彼此独立。智谋先决定有资格进入的人物层级，然后计算全部可用历史人物的四维距离，选择最近者和三个次近者。没有足够接近的人物时仍返回“相对最接近”，但明确提示差异。</p><p>人物的个性与政治属性是为互动游戏所作的解释性推定，并非真实心理学测量或史学定论。题目包含架空反事实。政治意见不打对错分；只有有标准答案的智谋试题计分。</p><h2>开放文本与可选改写</h2><p>默认使用离线词库和辅助倾向标记；只有安全服务端启用且游客事先主动勾选，才将自由文本发送到 DeepSeek。服务器或网络故障则保留离线结果。题目个性化只在游客先前回答包含准确原文句柄、后续题又有安全的白名单同义槽位时替换措辞。没有可靠句柄时原题一字不改；不额外插题、不使用其他游客原文、不改变评分规则或智谋题答案。</p><h2>历史与文化声明</h2><p>血汉值、血满值、血回值、血蒙值是中文历史亚文化风格的游戏化命名，仅描述对题设中的历史政治文化取向的共鸣。它们不代表现实民族、血统、遗传、宗教归属、智力或人格优劣。明清之际政治联盟具有复杂性，不能把一个朝代与某个族群直接等同。</p><h2>美术升级：图形 → 图片 → GIF</h2><p>首屏、人物肖像、问答插画与报告卡框的素材和升级计划都属于世界观制作说明，不占用游戏首页。</p><div class="about-slot-grid">'+[["home.hero","hero","首屏主视觉"],["home.background","scene","全站背景"],["question.default","scene","题目插画"],["character.default","portrait","人物卡片"],["result.banner","scene","结果背景"],["icon.scroll","icon","图标系统"],["card.frame","scene","卡框纹章"]].map(([key,type,cn])=>'<div>'+art(key,type)+'<div class="slot-label">'+key+'</div><small class="muted">'+cn+'</small></div>').join("")+'</div><p>所有槽位具有稳定 ID。美术作品放在本目录 assets/，修改 media.js 内同名槽的 mode（graphic / image / gif）和 src 路径即可。未提供的题目或人物专属素材自动回退默认图形。建议静态插画以 WebP 优先；短循环可以用 GIF，性能要求高时后续支持 WebM。</p><p class="muted">此站 GitHub Pages 免费静态托管，不能在前端暴露真实 AI API 密钥。后续接 AI 应经独立服务端代理，访问规则可单独验证。</p></div></section>';
+ '<section class="paper readable"><div class="paper-content"><h2>四维最近邻拟合</h2><p>人格四轴、政治六轴、四项历史阵营共鸣以及智谋表现彼此独立。智谋先决定有资格进入的人物层级，然后计算全部可用历史人物的四维距离，选择最近者和三个次近者。没有足够接近的人物时仍返回“相对最接近”，但明确提示差异。</p><p>人物的个性与政治属性是为互动游戏所作的解释性推定，并非真实心理学测量或史学定论。题目包含架空反事实。政治意见不打对错分；只有有标准答案的智谋试题计分。</p><h2>开放文本与可选改写</h2><p>默认启用 DeepSeek AI 语义辅助，模式选择页会明确告知：提交的自由回答将经 Cloudflare Worker 发往 DeepSeek。游客可在开始前切换纯离线模式，离线模式不请求 DeepSeek；服务器或网络故障也会回退离线评分。题目个性化只在游客先前回答包含准确原文句柄、后续题又有安全的白名单同义槽位时替换措辞。没有可靠句柄时原题一字不改；不额外插题、不使用其他游客原文、不改变评分规则或智谋题答案。</p><h2>历史与文化声明</h2><p>血汉值、血满值、血回值、血蒙值是中文历史亚文化风格的游戏化命名，仅描述对题设中的历史政治文化取向的共鸣。它们不代表现实民族、血统、遗传、宗教归属、智力或人格优劣。明清之际政治联盟具有复杂性，不能把一个朝代与某个族群直接等同。</p><h2>美术升级：图形 → 图片 → GIF</h2><p>首屏、人物肖像、问答插画与报告卡框的素材和升级计划都属于世界观制作说明，不占用游戏首页。</p><div class="about-slot-grid">'+[["home.hero","hero","首屏主视觉"],["home.background","scene","全站背景"],["question.default","scene","题目插画"],["character.default","portrait","人物卡片"],["result.banner","scene","结果背景"],["icon.scroll","icon","图标系统"],["card.frame","scene","卡框纹章"]].map(([key,type,cn])=>'<div>'+art(key,type)+'<div class="slot-label">'+key+'</div><small class="muted">'+cn+'</small></div>').join("")+'</div><p>所有槽位具有稳定 ID。美术作品放在本目录 assets/，修改 media.js 内同名槽的 mode（graphic / image / gif）和 src 路径即可。未提供的题目或人物专属素材自动回退默认图形。建议静态插画以 WebP 优先；短循环可以用 GIF，性能要求高时后续支持 WebM。</p><p class="muted">此站 GitHub Pages 免费静态托管，不能在前端暴露真实 AI API 密钥。后续接 AI 应经独立服务端代理，访问规则可单独验证。</p></div></section>';
 }
 function render(){
  const route=page().split("=")[0];document.querySelectorAll("[data-nav]").forEach(n=>n.classList.toggle("active",n.dataset.nav===route));
@@ -181,7 +181,8 @@ function render(){
 document.addEventListener("click",async e=>{
  const b=e.target.closest("[data-action]");if(!b||b.disabled)return;
  const action=b.dataset.action,id=b.dataset.id;
- if(action==="enter"||action==="retest"){navigate("setup");return}
+ if(action==="enter"||action==="retest"){state.setupOffline=false;navigate("setup");return}
+ if(action==="toggle-ai"){state.setupOffline=!state.setupOffline;render();return}
  if(action==="start"){start(b.dataset.mode);return}
  if(action==="continue"){navigate("quiz");return}
  if(action==="leave"){persist();navigate("home");toast("草稿已保存在本机");return}
