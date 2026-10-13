@@ -1,0 +1,94 @@
+name: MingQing Live Smoke Test
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/mingqing-live-smoke.yml'
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check live frontend, worker, and request guards (no paid AI calls)
+        env:
+          SITE_URL: https://zjj1280637679-ship-it.github.io/starport-persona/mingqing-mirror/
+          WORKER_URL: https://starport-deepseek-gateway.zjj1280637679.workers.dev
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request, urllib.error
+          site=os.environ['SITE_URL']; worker=os.environ['WORKER_URL']
+          def request(url, method='GET', headers=None, data=None):
+              r=urllib.request.Request(url,method=method,headers=headers or {},data=data)
+              try:
+                  with urllib.request.urlopen(r,timeout=20) as out:
+                      return out.status,dict(out.headers.items()),out.read().decode('utf8','replace')
+              except urllib.error.HTTPError as e:
+                  return e.code,dict(e.headers.items()),e.read().decode('utf8','replace')
+          for attempt in range(18):
+              st,_,page=request(site)
+              ct,_,cfg=request(site+'ai-config.js')
+              if st==200 and ct==200 and 'starport-deepseek-gateway.zjj1280637679.workers.dev' in cfg and 'turnstileSiteKey:' in cfg and 'turnstileSiteKey:""' not in cfg:break
+              print('Pages propagation pending',attempt+1,st,ct,flush=True);time.sleep(10)
+          else:raise AssertionError('Live GitHub Pages frontend is not ready')
+          assert 'id="app"' in page and 'app.js' in page, 'HTML bootstrap missing'
+          print('PASS: live HTML and public frontend AI config')
+          st,_,body=request(worker+'/health')
+          obj=json.loads(body)
+          assert st==200 and obj=={'ok':True,'configured':True,'enabled':True},(st,obj)
+          print('PASS: Worker /health (both secrets recognized and AI enabled)')
+          origin='https://zjj1280637679-ship-it.github.io'
+          st,h,_=request(worker+'/api/analyze',method='OPTIONS',headers={'Origin':origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'})
+          assert st==204 and h.get('access-control-allow-origin')==origin,(st,h)
+          print('PASS: CORS preflight allowed')
+          body=b'{"questionId":"p1","answer":"测试不发起付费请求"}'
+          st,_,text=request(worker+'/api/analyze',method='POST',headers={'Origin':'https://untrusted.invalid','Content-Type':'application/json'},data=body)
+          assert st==403 and 'origin_rejected' in text,(st,text)
+          print('PASS: unknown Origin rejected')
+          st,_,text=request(worker+'/api/analyze',method='POST',headers={'Origin':origin,'Content-Type':'application/json'},data=body)
+          assert st==403 and 'challenge_required' in text,(st,text)
+          print('PASS: missing Turnstile token rejected; no paid DeepSeek call')
+          PY
+      - name: Install Playwright browser
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Real browser smoke (mobile iPhone viewport, offline fallback)
+        env:
+          SITE_URL: https://zjj1280637679-ship-it.github.io/starport-persona/mingqing-mirror/
+        run: |
+          node --input-type=module <<'JS'
+          import { chromium } from 'playwright';
+          const browser=await chromium.launch({headless:true});
+          const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:2,isMobile:true,hasTouch:true});
+          const errors=[], paidCalls=[];
+          page.on('pageerror',e=>errors.push(String(e)));
+          page.on('request',r=>{if(r.url().includes('/api/analyze')||r.url().includes('/api/rewrite')||r.url().includes('/api/commentary'))paidCalls.push(r.url())});
+          const response=await page.goto(process.env.SITE_URL,{waitUntil:'domcontentloaded',timeout:45000});
+          if(response?.status()!==200)throw Error('Live page not HTTP 200');
+          await page.getByRole('button',{name:/启封入卷/}).click();
+          await page.locator('#ai-consent').waitFor({state:'visible'});
+          await page.getByRole('button',{name:/速鉴十二问/}).click();
+          await page.locator('#answer').waitFor({state:'visible'});
+          await page.locator('#answer').fill('我会先听取各方意见，并核查实际账目。');
+          await page.getByRole('button',{name:/下一题/}).click();
+          await page.getByText('第 2 / 12 问').waitFor({state:'visible',timeout:20000});
+          await page.screenshot({path:'mingqing-mobile-test.png',fullPage:true});
+          if(errors.length)throw Error('Browser JS exceptions: '+errors.join(' | '));
+          if(paidCalls.length)throw Error('Opt-out incorrectly sent paid API requests: '+paidCalls.join(','));
+          console.log('PASS: Mobile browser rendered; navigation, test choices and second question work.');
+          console.log('PASS: AI opt-out triggered no API requests.');
+          console.log('LIMIT: Real managed Turnstile challenge and paid DeepSeek response require verified visitor interaction.');
+          await browser.close();
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mingqing-mobile-smoke
+          path: mingqing-mobile-test.png
+          if-no-files-found: ignore
