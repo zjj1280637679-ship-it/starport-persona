@@ -2,6 +2,6 @@
 // 生产上线：Cloudflare Worker 部署、配置私密 Secrets、通过测试后再填写这两个公共字段。
 // 不得将 DeepSeek API Key、Turnstile Secret Key 填在本文件或任何静态网页中。
 export const AI_CONFIG={
- endpoint:"",
+ endpoint:"https://starport-deepseek-gateway.zjj1280637679.workers.dev",
  turnstileSiteKey:""
 };
