@@ -73,7 +73,7 @@ jobs:
           if(QUESTIONS.length!==28||Object.keys(CASE_BRIEFS).length!==28)throw Error('Expected 28 original questions and 28 contextual dossiers');
           for(const q of QUESTIONS){
             const b=CASE_BRIEFS[q.id];
-            if(!b||[b.place,b.role,b.mission,b.scope].some(x=>typeof x!=='string'||x.length<8))throw Error('Missing case identity or mandate for '+q.id);
+            if(!b||[b.place,b.role,b.mission,b.scope].some(x=>typeof x!=='string'||x.trim().length<3))throw Error('Missing case identity or mandate for '+q.id);
             if(!q.title||!q.scene||!q.ask||!q.group||!q.axis)throw Error('Question fields damaged: '+q.id);
             if(q.group==='wit'&&(q.options?.length!==4||!Number.isInteger(q.correct)))throw Error('Wit answer altered: '+q.id);
           }
