@@ -90,8 +90,13 @@ jobs:
           if(await page.locator('.mode-grid').count())throw Error('Game entry options should not be mixed with guide');
           await page.locator('nav a[href="#home"]').click();
           await page.getByRole('button',{name:/启封入卷/}).click();
-          await page.locator('#ai-consent').waitFor({state:'visible'});
+          await page.getByText('当前：DeepSeek AI 辅助（默认开启）').waitFor({state:'visible'});
+          if(await page.locator('#ai-consent').count())throw Error('Obsolete consent checkbox still exists');
+          await page.getByRole('button',{name:'改用纯离线模式'}).click();
+          await page.getByText('当前：纯离线模式').waitFor({state:'visible'});
           await page.getByRole('button',{name:/速鉴十二问/}).click();
+          const draftOffline=await page.evaluate(()=>JSON.parse(localStorage.getItem('mingqing-mirror:draft-v1')));
+          if(draftOffline?.aiConsent!==false)throw Error('Offline switch did not disable AI calls');
           await page.locator('#answer').waitFor({state:'visible'});
           const pills=page.locator('.quiz-card .pill-row button');
           if(await pills.count()!==3)throw Error('Expected exactly three answer tendency buttons');
@@ -132,7 +137,35 @@ jobs:
           if(paidCalls.length)throw Error('Opt-out incorrectly sent paid API requests: '+paidCalls.join(','));
           console.log('PASS: Mobile browser rendered; navigation, test choices and second question work.');
           console.log('PASS: AI opt-out triggered no API requests.');
+          // Test the AI-on default in an isolated browser session, using mocked
+          // Turnstile and model replies to avoid charging real API credits.
+          const aiPage=await browser.newPage({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
+          const seen=[];
+          await aiPage.addInitScript(()=>{
+            window.turnstile={render:(_node,settings)=>{queueMicrotask(()=>settings.callback('local-test-token'));return 1},remove:()=>{}};
+          });
+          await aiPage.route('**/api/analyze',async route=>{
+            const req=route.request();
+            if(req.method()==='OPTIONS')return route.fulfill({status:204,headers:{'access-control-allow-origin':'https://zjj1280637679-ship-it.github.io','access-control-allow-methods':'POST, OPTIONS','access-control-allow-headers':'content-type'}});
+            seen.push(JSON.parse(req.postData()||'{}'));
+            await route.fulfill({status:200,contentType:'application/json',headers:{'access-control-allow-origin':'https://zjj1280637679-ship-it.github.io'},body:JSON.stringify({keep:false,analysis:{value:0.6,confidence:0.93,quote:'听取各方意见'}})});
+          });
+          await aiPage.goto(process.env.SITE_URL,{waitUntil:'domcontentloaded',timeout:45000});
+          await aiPage.getByRole('button',{name:/启封入卷/}).click();
+          await aiPage.getByText('当前：DeepSeek AI 辅助（默认开启）').waitFor({state:'visible'});
+          if(await aiPage.locator('#ai-consent').count())throw Error('Consent checkbox unexpectedly required on AI-by-default flow');
+          await aiPage.getByRole('button',{name:/速鉴十二问/}).click();
+          const draftDefault=await aiPage.evaluate(()=>JSON.parse(localStorage.getItem('mingqing-mirror:draft-v1')));
+          if(draftDefault?.aiConsent!==true)throw Error('AI is not enabled by default');
+          await aiPage.locator('#answer').fill('我会先听取各方意见，并核查实际账目。');
+          await aiPage.getByRole('button',{name:/下一题/}).click();
+          await aiPage.getByText('第 2 / 12 问').waitFor({state:'visible',timeout:20000});
+          if(seen.length!==1||seen[0]?.answer!=='我会先听取各方意见，并核查实际账目。')throw Error('Default AI did not route submitted answer correctly: '+JSON.stringify(seen));
+          const after=await aiPage.evaluate(()=>JSON.parse(localStorage.getItem('mingqing-mirror:draft-v1')));
+          if(!Object.values(after.answers).some(x=>x.ai?.quote==='听取各方意见'))throw Error('Mocked AI evidence not applied to scoring state');
+          console.log('PASS: AI on by default: answer sent to mocked backend and its evidence saved.');
           console.log('LIMIT: Real managed Turnstile challenge and paid DeepSeek response require verified visitor interaction.');
+          await aiPage.close();
           await browser.close();
           JS
       - uses: actions/upload-artifact@v4
