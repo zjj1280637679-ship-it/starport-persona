@@ -1,0 +1,23 @@
+name: GM Organ DNA
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/gm-organs/**'
+      - '.github/workflows/gm-organs-dna.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  organ-dna:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Replay minimal organ DNA without paid model calls
+        run: node experiments/gm-organs/dna.mjs
