@@ -81,13 +81,16 @@ assert.match(second.narration,/先前获得的纸人/);
 assert.equal(second.state.revision,1); // 没有新变更就不虚增版本
 assert.equal(modelCalls,2);
 
-// 器官2的 DNA：过期写入/危险路径/越权操作不能偷偷成功。
+// 器官2的 DNA：无明确授权、过期写入、危险路径和越权操作不能悄悄成功。
+assert.throws(() => world.commit({
+  expectedRevision:1,changes:[{op:"set",path:["cards","unapproved"],value:{id:"unapproved"}}]
+}),/authorization_required/);
 assert.throws(() => world.commit({
   expectedRevision:0,changes:[{op:"set",path:["cards","fake"],value:{id:"fake"}}]
-}),/revision_conflict/);
+}, () => true),/revision_conflict/);
 assert.throws(() => world.commit({
   expectedRevision:1,changes:[{op:"set",path:["__proto__","danger"],value:true}]
-}),/invalid_path/);
+}, () => true),/invalid_path/);
 assert.throws(() => world.commit({
   expectedRevision:1,changes:[{op:"set",path:["player","actualIdentity"],value:"伪造身份"}]
 }, () => false),/change_not_authorized/);
@@ -99,7 +102,7 @@ assert.throws(() => world.commit({
     {op:"set",path:["cards","new-object"],value:{title:"临时奇物"}},
     {op:"append",path:["not-an-array"],value:"bad"}
   ]
-}),/append_target_not_array/);
+}, () => true),/append_target_not_array/);
 assert.equal(world.snapshot().state.cards["new-object"],undefined);
 assert.equal(world.history().length,1);
 
