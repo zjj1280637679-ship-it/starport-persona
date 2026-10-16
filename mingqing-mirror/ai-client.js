@@ -79,3 +79,22 @@ export async function requestCommentary(characterName,strengths,gaps){
  const out=await send("/api/commentary",{characterName,strengths,gaps});
  return out?.keep===false&&typeof out.commentary==="string"&&out.commentary.length>=15?out.commentary.slice(0,150):null;
 }
+
+/** Limited, optional AI narrator. Never applies any state/card/achievement changes. */
+export async function storyTurn(payload){
+ if(!aiEnabled||!payload||payload.storyId!=="jiashen-fourteen-nights")return null;
+ const result=await send("/api/story/turn",{
+  storyId:payload.storyId,
+  sceneId:payload.sceneId,
+  scene:String(payload.scene||"").slice(0,620),
+  day:payload.day,
+  choices:Array.isArray(payload.choices)?payload.choices.slice(0,3):[],
+  transcript:Array.isArray(payload.transcript)?payload.transcript.slice(-12):[],
+  playerInput:String(payload.playerInput||"").slice(0,800)
+ });
+ if(!result||result.keep!==false||typeof result.reply!=="string")return null;
+ return {
+  reply:result.reply.slice(0,620),
+  suggestedIndex:Number.isInteger(result.suggestedIndex)&&result.suggestedIndex>=0&&result.suggestedIndex<3?result.suggestedIndex:null
+ };
+}
