@@ -1,0 +1,27 @@
+name: GM Harness API Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'gm-harness/**'
+      - 'deepseek-worker/src/index.js'
+      - 'deepseek-worker/wrangler.toml'
+      - '.github/workflows/gm-web-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  gm-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify GM webpage, mock paid API and two-turn world state
+        run: node gm-harness/test.mjs
+      - name: Recheck independent organ DNA
+        run: node experiments/gm-organs/dna.mjs
