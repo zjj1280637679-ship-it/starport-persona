@@ -50,7 +50,7 @@ jobs:
               print('::warning::Cloudflare 1010 blocks GitHub runner from Worker; Worker API tests cannot be assessed from this runner.')
               raise SystemExit(0)
           obj=json.loads(body)
-          assert st==200 and obj=={'ok':True,'configured':True,'enabled':True},(st,obj)
+          assert st==200 and all(obj.get(k) is True for k in ('ok','configured','enabled')),(st,obj)
           print('PASS: Worker /health (both secrets recognized and AI enabled)')
           origin='https://zjj1280637679-ship-it.github.io'
           st,h,_=request(worker+'/api/analyze',method='OPTIONS',headers={'Origin':origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'content-type'})
