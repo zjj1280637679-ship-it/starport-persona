@@ -28,7 +28,7 @@ const STAGES=[
   ["封图","拒绝接受命运的控制","我选择封印星图","star_map_found","river-ferry-token",0,0,5,["tf:-1","autonomy:1"]]
  ]},
  {day:7,npc:"江南客商",intro:"渡口百姓等粮，旧朝遗臣求证，关外使者愿意订盟。你这一夜只能够亲自处理一件事。",choices:[
-  ["救渡口","舍弃异宝优先保护生命","我先救下渡口百姓","sacrificed_treasure","",0,2,7,["tf:-1","autonomy:1","han:1"]],
+  ["救渡口","舍弃异宝优先保护生命","我先救下渡口百姓","rescued_many","",0,2,7,["tf:-1","autonomy:1","han:1"]],
   ["结双盟","同时争取两方使者的信任","我要化解敌意维持双约","two_pacts_kept","guest-pass",1,1,10,["diplomacy:1","man:1","meng:1"]],
   ["查暗账","先追查失踪的军粮证据","我要找出粮饷暗账","preserved_testimony","sealed-account",2,0,10,["tf:1","han:1","sn:1"]]
  ]},
@@ -58,7 +58,11 @@ function choose(i){
  flag(o[3]);add(o[4]);
  session.resources.suspicion=cap(session.resources.suspicion+o[5]);session.resources.trust=cap(session.resources.trust+o[6]);
  if(o[0]==="换粮")session.resources.coins+=3;
- if(o[0]==="救渡口")session.resources.coins=cap(session.resources.coins-2);
+ if(o[0]==="救渡口"){
+   session.resources.coins=cap(session.resources.coins-2);
+   const sacrificed=session.inventory.find(id=>world.cards.find(card=>card.id===id)?.type==="treasure");
+   if(sacrificed){session.inventory=session.inventory.filter(x=>x!==sacrificed);flag("sacrificed_treasure")}
+ }
  if(o[0]==="结双盟")session.resources.coins+=1;
  if(o[0]==="救渡口"||o[0]==="携人离去")flag("rescued_many");
  if(o[0]==="查暗账"||o[0]==="护史而留")flag("preserved_testimony");
