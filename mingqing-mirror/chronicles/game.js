@@ -86,6 +86,7 @@ function useCard(id){
  const unlocked=rewards();store();draw();if(unlocked.length)toast("新成就："+unlocked.join("、"));
 }
 async function talk(input){
+ if(replying)return toast("AI 酒馆正在回应，请稍候");
  const t=String(input||"").trim().slice(0,700);if(!t)return toast("先写下要说的话");if(!session||session.ended)return;
  msg("你",t,"player");
  const oldStep=session.step,ref=session;
