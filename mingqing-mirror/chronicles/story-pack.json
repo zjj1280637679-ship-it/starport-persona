@@ -1,0 +1,429 @@
+{
+  "schema": "chronicle-story-pack/v0.1",
+  "id": "jiashen-fourteen-nights",
+  "title": "甲申十四夜：死者的诏书",
+  "genre": [
+    "明清架空",
+    "历史奇幻",
+    "卡牌叙事",
+    "AI酒馆"
+  ],
+  "pitch": "一封来自未来的遗诏送到你的档馆。城破之前，你还有十四夜可以决定自己的命运。",
+  "initial": {
+    "day": 1,
+    "deadline": 14,
+    "resources": {
+      "coins": 3,
+      "trust": 1,
+      "suspicion": 0
+    },
+    "flags": [],
+    "inventory": [
+      "future-edict"
+    ],
+    "companions": [],
+    "achievements": [],
+    "turn": 0
+  },
+  "art": {
+    "background": "story.jiashen.background",
+    "hero": "scene.archive-night",
+    "npcDefault": "npc.innkeeper"
+  },
+  "cards": [
+    {
+      "id": "future-edict",
+      "type": "intelligence",
+      "rarity": "forbidden",
+      "title": "未来密诏",
+      "artSlot": "card.future-edict",
+      "charges": null,
+      "tags": [
+        "预言",
+        "禁物"
+      ],
+      "effects": [],
+      "restrictions": [
+        "不可无代价销毁"
+      ],
+      "description": "写着尚未发生之事的密诏，疑似由死者送达。"
+    },
+    {
+      "id": "paper-servant",
+      "type": "companion",
+      "rarity": "rare",
+      "title": "纸人传诏使",
+      "artSlot": "card.paper-servant",
+      "charges": null,
+      "tags": [
+        "传讯",
+        "契约"
+      ],
+      "effects": [
+        "deliver_across_checkpoint"
+      ],
+      "restrictions": [
+        "无法违背旧誓"
+      ],
+      "description": "服从旧约而非玩家的绝对意志。"
+    },
+    {
+      "id": "revival-pellet",
+      "type": "treasure",
+      "rarity": "forbidden",
+      "title": "红砂还魂丹",
+      "artSlot": "card.revival-pellet",
+      "charges": 1,
+      "tags": [
+        "复生",
+        "代价"
+      ],
+      "effects": [
+        "temporary_revive"
+      ],
+      "restrictions": [
+        "归来者仍有自己的动机",
+        "复生只能持续七夜"
+      ],
+      "description": "可让亡者归来七夜，却无法命令其思想。"
+    },
+    {
+      "id": "inverse-star-map",
+      "type": "treasure",
+      "rarity": "epic",
+      "title": "逆史星图",
+      "artSlot": "card.star-map",
+      "charges": 2,
+      "tags": [
+        "预言",
+        "因果"
+      ],
+      "effects": [
+        "view_possible_future"
+      ],
+      "restrictions": [
+        "改变预示将产生反噬"
+      ],
+      "description": "见可能之未来，却不是命运的账本。"
+    },
+    {
+      "id": "old-copper-key",
+      "type": "treasure",
+      "rarity": "common",
+      "title": "废库铜钥",
+      "artSlot": "card.old-copper-key",
+      "charges": 1,
+      "tags": [
+        "钥匙",
+        "信物"
+      ],
+      "effects": [
+        "open_archive"
+      ],
+      "restrictions": [],
+      "description": "看似普通，或许比异宝更值得留下。"
+    },
+    {
+      "id": "sealed-account",
+      "type": "intelligence",
+      "rarity": "uncommon",
+      "title": "粮饷暗账",
+      "artSlot": "card.sealed-account",
+      "charges": null,
+      "tags": [
+        "证据",
+        "财政"
+      ],
+      "effects": [
+        "reveal_corruption"
+      ],
+      "restrictions": [],
+      "description": "可以救人，也能害人。"
+    },
+    {
+      "id": "broken-oath",
+      "type": "omen",
+      "rarity": "rare",
+      "title": "旧誓余烬",
+      "artSlot": "card.broken-oath",
+      "charges": null,
+      "tags": [
+        "因果",
+        "旧契"
+      ],
+      "effects": [],
+      "restrictions": [
+        "不能无条件移除"
+      ],
+      "description": "某人违背誓言留下的迟来代价。"
+    },
+    {
+      "id": "border-scout",
+      "type": "companion",
+      "rarity": "uncommon",
+      "title": "边关斥候",
+      "artSlot": "card.border-scout",
+      "charges": null,
+      "tags": [
+        "侦查",
+        "风险"
+      ],
+      "effects": [
+        "scout_safe_route"
+      ],
+      "restrictions": [
+        "不为无意义的献祭卖命"
+      ],
+      "description": "记得路，也记得那些沿途未曾归来的人。"
+    },
+    {
+      "id": "river-ferry-token",
+      "type": "treasure",
+      "rarity": "common",
+      "title": "渡口木符",
+      "artSlot": "card.river-ferry-token",
+      "charges": 1,
+      "tags": [
+        "路引"
+      ],
+      "effects": [
+        "cross_river"
+      ],
+      "restrictions": [],
+      "description": "不贵，却可能让你避开一夜烽火。"
+    },
+    {
+      "id": "blood-ink-brush",
+      "type": "treasure",
+      "rarity": "epic",
+      "title": "血墨笔",
+      "artSlot": "card.blood-ink-brush",
+      "charges": 1,
+      "tags": [
+        "文书",
+        "业报"
+      ],
+      "effects": [
+        "rewrite_oath"
+      ],
+      "restrictions": [
+        "所改的一条旧誓将转移给自己"
+      ],
+      "description": "修改别人的承诺时，也会在自己身上写下一笔。"
+    },
+    {
+      "id": "guest-pass",
+      "type": "covenant",
+      "rarity": "common",
+      "title": "客籍牌",
+      "artSlot": "card.guest-pass",
+      "charges": 1,
+      "tags": [
+        "身份",
+        "伪装"
+      ],
+      "effects": [
+        "enter_city"
+      ],
+      "restrictions": [
+        "一旦被查验便失效"
+      ],
+      "description": "临时获得一个身份，代价是无法解释其来源。"
+    },
+    {
+      "id": "ink-cicada",
+      "type": "treasure",
+      "rarity": "rare",
+      "title": "墨蝉",
+      "artSlot": "card.ink-cicada",
+      "charges": 2,
+      "tags": [
+        "窃听",
+        "幻术"
+      ],
+      "effects": [
+        "overhear_dialogue"
+      ],
+      "restrictions": [
+        "每次窃听会增加疑罪"
+      ],
+      "description": "纸蝉在黑夜里听见的，不一定都是真话。"
+    }
+  ],
+  "achievements": [
+    {
+      "id": "first-revelation",
+      "title": "亡者叩门",
+      "hidden": false,
+      "condition": {
+        "flag": "opened_edict"
+      }
+    },
+    {
+      "id": "silent-keeper",
+      "title": "守口如瓶",
+      "hidden": false,
+      "condition": {
+        "flag": "kept_edict_secret"
+      }
+    },
+    {
+      "id": "bargain-with-dead",
+      "title": "借死人之口",
+      "hidden": false,
+      "condition": {
+        "flag": "revived_dead"
+      }
+    },
+    {
+      "id": "mirror-of-futures",
+      "title": "星图失准",
+      "hidden": false,
+      "condition": {
+        "flag": "altered_forecast"
+      }
+    },
+    {
+      "id": "mercy-over-miracle",
+      "title": "舍宝救人",
+      "hidden": false,
+      "condition": {
+        "flag": "sacrificed_treasure"
+      }
+    },
+    {
+      "id": "twin-oaths",
+      "title": "两面成约",
+      "hidden": true,
+      "condition": {
+        "flag": "two_pacts_kept"
+      }
+    },
+    {
+      "id": "quill-of-destiny",
+      "title": "执笔之人",
+      "hidden": true,
+      "condition": {
+        "flag": "recognized_own_hand"
+      }
+    },
+    {
+      "id": "fourteenth-night",
+      "title": "十四夜之后",
+      "hidden": false,
+      "condition": {
+        "flag": "survived_fourteenth_night"
+      }
+    }
+  ],
+  "milestones": [
+    {
+      "id": "m1",
+      "title": "死者叩门",
+      "artSlot": "scene.archive-night",
+      "minDay": 1,
+      "prerequisites": [],
+      "reveals": [
+        "opened_edict"
+      ]
+    },
+    {
+      "id": "m2",
+      "title": "镇尸纸人",
+      "artSlot": "scene.paper-servant",
+      "minDay": 2,
+      "prerequisites": [
+        "opened_edict"
+      ],
+      "reveals": [
+        "paper_servant_met"
+      ]
+    },
+    {
+      "id": "m3",
+      "title": "红砂还魂",
+      "artSlot": "scene.revival-altar",
+      "minDay": 3,
+      "prerequisites": [
+        "paper_servant_met"
+      ],
+      "reveals": [
+        "revival_alchemy_found"
+      ]
+    },
+    {
+      "id": "m4",
+      "title": "逆史星图",
+      "artSlot": "scene.star-map",
+      "minDay": 5,
+      "prerequisites": [
+        "revival_alchemy_found"
+      ],
+      "reveals": [
+        "star_map_found"
+      ]
+    },
+    {
+      "id": "m5",
+      "title": "同盟与背叛",
+      "artSlot": "scene.river-inn",
+      "minDay": 7,
+      "prerequisites": [
+        "star_map_found"
+      ],
+      "reveals": [
+        "alliances_compete"
+      ]
+    },
+    {
+      "id": "m6",
+      "title": "未来之笔",
+      "artSlot": "scene.future-edict",
+      "minDay": 10,
+      "prerequisites": [
+        "alliances_compete"
+      ],
+      "reveals": [
+        "recognized_own_hand"
+      ]
+    },
+    {
+      "id": "m7",
+      "title": "命书终章",
+      "artSlot": "scene.finale",
+      "minDay": 14,
+      "prerequisites": [
+        "recognized_own_hand"
+      ],
+      "reveals": [
+        "ending_triggered"
+      ]
+    }
+  ],
+  "endings": [
+    {
+      "id": "preserve-lives",
+      "name": "灯下留人",
+      "conditions": [
+        "rescued_many"
+      ],
+      "artSlot": "ending.lantern-survival"
+    },
+    {
+      "id": "preserve-history",
+      "name": "史笔不折",
+      "conditions": [
+        "preserved_testimony"
+      ],
+      "artSlot": "ending.ink-history"
+    },
+    {
+      "id": "vanish",
+      "name": "无名归山",
+      "conditions": [
+        "left_the_city"
+      ],
+      "artSlot": "ending.mountain-exile"
+    }
+  ]
+}
