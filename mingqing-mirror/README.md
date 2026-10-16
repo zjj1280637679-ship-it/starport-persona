@@ -1,3 +1,7 @@
+> **阶段说明（2026-10-16）**：以下是《明清人物镜》**固定题库版**的实现说明，仍可复验；它不再是通用文字冒险 GM Harness 的目标规范。当前整体方向与工作树请见 [../AGENTS.md](../AGENTS.md)、[../docs/VISION.md](../docs/VISION.md)、[../docs/HANDOFF.md](../docs/HANDOFF.md)。文中“严格遵循”“必须”是此前原型的策略约定，不应未经推理就强加给新一代系统。
+
+---
+
 # 明清人物镜 · 独立 GitHub Pages 子站
 
 访问地址：https://zjj1280637679-ship-it.github.io/starport-persona/mingqing-mirror/
