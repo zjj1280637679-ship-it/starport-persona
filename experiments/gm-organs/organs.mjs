@@ -34,7 +34,8 @@ export function makeWorld(initial = {}) {
   let state = copy(initial), revision = 0;
   const history = [];
   function snapshot() { return {revision, state: copy(state)}; }
-  function commit({expectedRevision, changes, cause = ""}, authorize = () => true) {
+  function commit({expectedRevision, changes, cause = ""}, authorize) {
+    if (typeof authorize !== "function") throw Error("authorization_required");
     if (expectedRevision !== revision) throw Error("revision_conflict");
     if (!Array.isArray(changes) || !changes.length || changes.length > 20)
       throw Error("invalid_changes");
