@@ -114,14 +114,14 @@ export function chooseAsset(assets, desiredTags = []) {
  * model 是可替换的模型调用函数；approve 是调用方的变更授权工具。
  * GM 会提出对世界的改动；账本才决定它是否成立。
  */
-export function makeGM({model, library, world, approve}) {
+export function makeGM({model, library, world, approve, systemPrompt = "你是文字冒险游戏的 GM / DM。"}) {
   if (typeof model !== "function" || typeof approve !== "function")
     throw Error("model_and_approval_required");
   return {
     async turn({playerText, region, tier, observer, appendixId = null}) {
       const before = world.snapshot();
       const context = {
-        system: "你是文字推理冒险的 GM / DM。创造并延续因果可信的故事，重要变化需要提议提交到世界账本。",
+        system: systemPrompt,
         world: before.state,
         overview: library.overview(),
         currentBook: library.readBook(region + "/" + tier),
