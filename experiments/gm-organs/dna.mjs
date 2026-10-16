@@ -5,7 +5,16 @@
  * 仅证明当前最小样本，不构成“未来唯一正确实现”。
  */
 import assert from "node:assert/strict";
+import {readFile} from "node:fs/promises";
 import {makeLibrarian, makeWorld, perceiveIdentity, describeView, chooseAsset, makeGM} from "./organs.mjs";
+
+// DNA: System 极短、GM 文档按需查阅；不要把整篇规则塞进每次调用。
+const systemPrompt=(await readFile(new URL("./SYSTEM.txt",import.meta.url),"utf8")).trim();
+const gmGuide=await readFile(new URL("./GM.md",import.meta.url),"utf8");
+assert.match(systemPrompt,/GM \/ DM/);
+assert.ok(systemPrompt.length<150, "启动提示保持极简");
+assert.match(gmGuide,/行动具有因果/);
+assert.ok(!systemPrompt.includes("行动具有因果"), "文档不应被永久复制到 SYSTEM");
 
 const library = makeLibrarian({
   overview: "架空晚明世界；默认按地区 × 当前可接触阶层查阅薄卷。",
@@ -13,7 +22,7 @@ const library = makeLibrarian({
     "辽东/low": "军镇边缘，外来者常被怀疑；角色可以借伪装、担保或交易获取准入。",
     "辽东/high": "高层使节参与边务，但倚仗的凭证和靠山可能突然失效。"
   },
-  appendices: {"npc/guard": "守卫善于查验印信，暂时不知玩家真实身份。"}
+  appendices: {"npc/guard": "守卫善于查验印信，暂时不知玩家真实身份。", "gm/guide": gmGuide}
 });
 // 器官1的 DNA：只需知道索引便能按需读一卷、读一页附录。
 assert.deepEqual(library.catalog(), ["辽东/low", "辽东/high"]);
@@ -46,10 +55,15 @@ assert.deepEqual(chosen, {id:"art.frontier",uri:"./frontier.webp"});
 // 器官6的 DNA：一个模拟 GM，首次发明奇物，下一轮识别已持有事实。
 let modelCalls=0;
 const gm = makeGM({
-  library, world,
+  library, world, systemPrompt,
   model: async context => {
     modelCalls++;
     assert.equal(context.identity.region, "辽东");
+    assert.equal(context.system,systemPrompt);
+    if (modelCalls===1) {
+      // 模拟模型主动选择翻阅 GM 附录：此前的 SYSTEM 不包含文档全文。
+      assert.match(library.readAppendix("gm/guide").text,/行动具有因果/);
+    }
     assert.match(context.currentBook.text, /军镇边缘/);
     if (context.world.cards["paper-servant"]) {
       return {narration: "守卫认出你带着先前获得的纸人，此物仍在你的账本里。", changes: []};
@@ -109,4 +123,4 @@ assert.equal(world.history().length,1);
 const view=describeView({narration:"测试",status:{location:"辽东"},cards:[{id:"paper-servant",title:"纸人侍者"}]});
 assert.equal(view.sections.length,3);
 
-console.log("PASS GM-organs DNA: 六类行为样本，双轮记忆，身份称呼差异，安全审计，结构化显示");
+console.log("PASS GM-organs DNA: 极简 SYSTEM + 按需 GM 文档 + 六类器官，双轮记忆、身份差异、安全审计");
