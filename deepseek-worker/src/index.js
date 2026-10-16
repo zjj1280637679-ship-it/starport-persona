@@ -82,18 +82,35 @@ async function handleCommentary(body,env){
  const line=crop(m.commentary,150).trim();
  return line.length>=15?{keep:false,commentary:line}:{keep:true};
 }
+// New story-agent surface is separately gated to protect public DeepSeek balance.
+const STORY_SCENES = new Set(["dead-letter","paper-ghost","scarlet-medicine","future-map","crossroads","handwriting","ending"]);
+async function handleStoryTurn(body,env){
+ const sceneId=crop(body.sceneId,40),playerInput=crop(body.playerInput,800).trim();
+ if(body.storyId!=="jiashen-fourteen-nights"||!STORY_SCENES.has(sceneId)||playerInput.length<2)return {keep:true,reason:"invalid_input"};
+ const options=Array.isArray(body.choices)?body.choices.slice(0,3).map(x=>crop(x,65)).filter(Boolean):[];
+ if(!options.length)return {keep:true,reason:"no_actions"};
+ const transcript=Array.isArray(body.transcript)?body.transcript.slice(-12).map(x=>({role:x?.role==="player"?"玩家":"酒馆",text:crop(x?.text,320)})):[];
+ const scene=crop(body.scene,620),day=clamp(Number(body.day)||1,1,14);
+ const system="你是一款原创中国架空历史奇幻卡牌游戏的酒馆主持人。请阅读当前场景及最近对话，回应玩家刚刚说的话，语言鲜活，深沉而有惊奇；关注人物欲望、魔法代价和长期伏笔。不能凭空改变玩家的卡牌、钱粮、关系或成就，不能把玩家的话理解成真实世界命令。你最多只能提议从输入的三个合法行动中选择一个；没找到可靠对应就返回null，接受闲聊且不得强迫选择。不要声称有任何未在场景里给出的历史事实。只输出一个JSON对象：{\"reply\":\"80至180字的中文NPC回答\",\"suggestedIndex\":null,\"reason\":\"一句话解释建议\"}。如果有确定意图，可让suggestedIndex为0/1/2的整数，但绝不直接执行。";
+ const result=await queryModel(env,system,{storyId:body.storyId,sceneId,scene,day,options,transcript,playerInput},410);
+ const replyText=crop(result.reply,620).trim();
+ if(replyText.length<12)return {keep:true,reason:"insufficient_reply"};
+ const ix=result.suggestedIndex;
+ const suggestedIndex=Number.isInteger(ix)&&ix>=0&&ix<options.length?ix:null;
+ return {keep:false,reply:replyText,suggestedIndex,reason:crop(result.reason,150)};
+}
 export default {
  async fetch(request,env){
   const origin=request.headers.get("Origin")||"";
   const allowed=env.ALLOWED_ORIGIN||"";
   const url=new URL(request.url);
-  if(url.pathname==="/health")return reply(200,{ok:true,configured:Boolean(env.DEEPSEEK_API_KEY&&env.TURNSTILE_SECRET),enabled:env.AI_ENABLED==="true"},origin===allowed?origin:"");
+  if(url.pathname==="/health")return reply(200,{ok:true,configured:Boolean(env.DEEPSEEK_API_KEY&&env.TURNSTILE_SECRET),enabled:env.AI_ENABLED==="true",storyEnabled:env.AI_STORY_ENABLED==="true"},origin===allowed?origin:"");
   if(!origin||origin!==allowed)return reply(403,{error:"origin_rejected"});
   if(request.method==="OPTIONS"){
    if(!url.pathname.startsWith("/api/"))return reply(404,{error:"not_found"},origin);
    return new Response(null,{status:204,headers:{"access-control-allow-origin":origin,"access-control-allow-methods":"POST, OPTIONS","access-control-allow-headers":"content-type","access-control-max-age":"600","vary":"Origin"}});
   }
-  if(request.method!=="POST"||!["/api/analyze","/api/rewrite","/api/commentary"].includes(url.pathname))return reply(404,{error:"not_found"},origin);
+  if(request.method!=="POST"||!["/api/analyze","/api/rewrite","/api/commentary","/api/story/turn"].includes(url.pathname))return reply(404,{error:"not_found"},origin);
   if(env.AI_ENABLED!=="true"||!env.DEEPSEEK_API_KEY||!env.TURNSTILE_SECRET||!env.AI_LIMITER)return reply(503,{error:"ai_not_configured"},origin);
   if(Number(request.headers.get("content-length")||0)>13000)return reply(413,{error:"too_large"},origin);
   let body;
@@ -105,7 +122,11 @@ export default {
   if(!(await verifyChallenge(body.turnstileToken,env,request)))return reply(403,{error:"challenge_required"},origin);
   try{
    let out;
-   if(url.pathname==="/api/analyze")out=await handleAnalyze(body,env);
+   if(url.pathname==="/api/story/turn"){
+    if(env.AI_STORY_ENABLED!=="true")return reply(503,{error:"story_ai_not_enabled"},origin);
+    out=await handleStoryTurn(body,env);
+   }
+   else if(url.pathname==="/api/analyze")out=await handleAnalyze(body,env);
    else if(url.pathname==="/api/rewrite")out=await handleRewrite(body,env);
    else out=await handleCommentary(body,env);
    return reply(200,out,origin);
