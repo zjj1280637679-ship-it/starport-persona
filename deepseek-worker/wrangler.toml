@@ -5,6 +5,8 @@ compatibility_date = "2026-10-13"
 # Public configuration only. DO NOT commit API credentials or Turnstile secret here.
 [vars]
 AI_ENABLED = "true"
+# GM needs an explicit operator enable; public model calls incur spend.
+GM_ENABLED = "false"
 DEEPSEEK_MODEL = "deepseek-flash"
 ALLOWED_ORIGIN = "https://zjj1280637679-ship-it.github.io"
 
@@ -14,4 +16,12 @@ name = "AI_LIMITER"
 namespace_id = "1001"
 [ratelimits.simple]
 limit = 12
+period = 60
+
+# Independent conservative limit for paid freeform GM turns.
+[[ratelimits]]
+name = "GM_LIMITER"
+namespace_id = "1002"
+[ratelimits.simple]
+limit = 3
 period = 60
