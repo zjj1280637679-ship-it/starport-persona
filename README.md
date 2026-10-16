@@ -1,3 +1,7 @@
+> **给接手本仓库的任何 Agent：先阅读 [AGENTS.md](AGENTS.md) → [docs/VISION.md](docs/VISION.md) → [docs/HANDOFF.md](docs/HANDOFF.md)。** 本 README 下面主要介绍已经上线的“暮灯星栈”旧项目，不代表整个仓库当前研究方向。新方向是 **通用 AI GM/DM + 薄地图 Skill 丛书 + 动态身份与世界记忆 + 通用网页 Harness**。旧站保留可用；不要因现有固定题库/七幕卡牌原型而预设未来必须沿该策略继续。
+
+---
+
 # 暮灯星栈 · 文明倾向酒馆（GitHub Pages）
 
 ## 网站
