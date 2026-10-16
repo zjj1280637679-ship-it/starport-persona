@@ -20,6 +20,7 @@
 - [docs/HANDOFF.md](docs/HANDOFF.md)：已做/未做、证据、风险、下一步实验候选
 - [docs/EVOLUTION.md](docs/EVOLUTION.md)：设计如何从测试题演化为 GM Harness；旧决定为何不是新约束
 - [experiments/gm-organs/README.md](experiments/gm-organs/README.md)：当前最小功能器官及可复现的 DNA 样本，不代表正式架构
+- [experiments/gm-organs/SYSTEM.txt](experiments/gm-organs/SYSTEM.txt) + [GM.md](experiments/gm-organs/GM.md)：GM 一句启动提示 + 按需阅读的主持附录
 
 旧文档，如 `mingqing-mirror/chronicles/DESIGN.md`、`deepseek-worker/README.md`，记录当时的方案与步骤，**不是当前目标的最高权威**。若代码、部署、文档不一致，请重新验证并更新。
 
