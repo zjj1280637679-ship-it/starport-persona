@@ -122,9 +122,11 @@ function gmValidateState(value){
 }
 function gmApply(state,updates){
  if(!Array.isArray(updates))return {world:state,accepted:[],rejected:0};
- const draft=gmClone(state),accepted=[];let rejected=0;
+ let draft=gmClone(state);const accepted=[];let rejected=0;
  for(const candidate of updates.slice(0,5)){
   try{
+   // Every proposal gets an isolated draft: rejecting one cannot pollute later accepted changes.
+   const next=gmClone(draft);
    if(!isObject(candidate)||!["set","append"].includes(candidate.op)||
       !Array.isArray(candidate.path)||candidate.path.length<1||candidate.path.length>4||
       candidate.path.some(k=>typeof k!=="string"||k.length>60||!k||GM_BLOCKED_KEYS.has(k))||
@@ -135,7 +137,7 @@ function gmApply(state,updates){
       (candidate.path.length!==1||typeof candidate.value!=="string"||candidate.value.length>35))throw Error("bad_location");
    if(candidate.op==="set"&&candidate.path[0]==="player"&&candidate.path.length===1)throw Error("player_overwrite");
    if(candidate.op==="set"&&["regions","cards","npcs"].includes(candidate.path[0])&&candidate.path.length===1)throw Error("root_overwrite");
-   let node=draft;
+   let node=next;
    for(const key of candidate.path.slice(0,-1)){
     if(!isObject(node)&&!Array.isArray(node))throw Error("bad_container");
     if(node[key]===undefined)node[key]={};
@@ -150,7 +152,8 @@ function gmApply(state,updates){
     if(!isObject(node)&&!Array.isArray(node))throw Error("bad_container");
     node[key]=gmClone(candidate.value);
    }
-   if(!gmValidateState(draft))throw Error("too_large");
+   if(!gmValidateState(next))throw Error("too_large");
+   draft=next;
    accepted.push({op:candidate.op,path:candidate.path,value:candidate.value});
   }catch{rejected++}
  }
@@ -172,9 +175,9 @@ async function handleFreeGM(body,env){
  const resolved=gmApply(state,output.changes);
  const world=resolved.world;
  // Record the visible turn even if the model proposed no valid mutation.
- const event={who:"player",text:playerText.slice(0,200),gm:narration.slice(0,260)};
+ const event={who:"player",text:playerText.slice(0,130),gm:narration.slice(0,170)};
  world.chronicle.push(event);
- while(world.chronicle.length>18)world.chronicle.shift();
+ while(world.chronicle.length>10)world.chronicle.shift();
  while(world.facts.length>24)world.facts.shift();
  if(!gmValidateState(world))return {keep:true,reason:"world_limit_reached"};
  return {keep:false,narration,world,changes:resolved.accepted,rejected:resolved.rejected};
