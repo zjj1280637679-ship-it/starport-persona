@@ -1,11 +1,12 @@
 import {art} from "../media.js";
 import {CHARACTERS} from "../data.js";
+import {aiEnabled,storyTurn} from "../ai-client.js";
 const KEY="jiashen-session-v1",BOOK="jiashen-collection-v1";
 const root=document.querySelector("#app");
 const E=s=>String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const get=(key,def)=>{try{return JSON.parse(localStorage.getItem(key))??def}catch{return def}};
 const cap=(n,a=0,b=99)=>Math.min(b,Math.max(a,n));
-let world=null,session=get(KEY,null),book=get(BOOK,{cards:[],achievements:[],endings:[]}),selected=null,modal=false;
+let world=null,session=get(KEY,null),book=get(BOOK,{cards:[],achievements:[],endings:[]}),selected=null,modal=false,replying=false;
 const STAGES=[
  {day:1,npc:"死者内侍",intro:"门外站着死去二十年的内侍，他送来一封未来诏书。它写出明天你将做的选择。",choices:[
   ["读诏","核查未来诏书的落款","先核查证据","opened_edict","future-edict",1,0,5,["ei:-1","sn:1","method:-1"]],
@@ -43,17 +44,17 @@ const STAGES=[
   ["弃世归山","放下奇物从此不争天下","我走入群山不再回首","survived_fourteenth_night","",0,0,7,["ei:-1","autonomy:1"],"vanish"]
  ]}
 ];
-function make(){return{step:0,day:1,resources:{coins:3,trust:1,suspicion:0},inventory:["future-edict"],charges:{},flags:[],evidence:[],log:[{who:"旧档馆的守夜人",text:STAGES[0].intro,role:"npc"}],ended:null}};
+function make(){return{step:0,day:1,resources:{coins:3,trust:1,suspicion:0},inventory:["future-edict"],charges:{},flags:[],evidence:[],log:[{who:"旧档馆的守夜人",text:STAGES[0].intro,role:"npc"}],ended:null,aiConsent:false,aiCalls:0,pendingSuggestion:null}};
 function store(){try{localStorage.setItem(KEY,JSON.stringify(session));localStorage.setItem(BOOK,JSON.stringify(book))}catch{}}
 function msg(who,text,role="npc"){session.log.push({who,text,role});session.log=session.log.slice(-70)}
 function flag(id){if(!session.flags.includes(id))session.flags.push(id)}
 function add(id){if(!id)return;if(!world.cards.find(c=>c.id===id))return;if(!session.inventory.includes(id))session.inventory.push(id);if(!book.cards.includes(id))book.cards.push(id)}
 function rewards(){const newOnes=[];for(const a of world.achievements){if(session.flags.includes(a.condition.flag)&&!book.achievements.includes(a.id)){book.achievements.push(a.id);newOnes.push(a.title)}}return newOnes}
 function toast(text){const n=document.querySelector("#toast");n.textContent=text;n.classList.add("visible");clearTimeout(toast.timer);toast.timer=setTimeout(()=>n.classList.remove("visible"),2600)}
-function start(){session=make();selected=null;add("future-edict");store();draw()}
+function start(){const accepted=aiEnabled&&!!(document.querySelector("#opt-ai")?.checked||session?.aiConsent);session=make();session.aiConsent=accepted;selected=null;add("future-edict");store();draw()}
 function choose(i){
  if(!session||session.ended)return;
- const stage=STAGES[session.step],o=stage.choices[i];if(!o)return;
+ const stage=STAGES[session.step],o=stage.choices[i];if(!o)return;session.pendingSuggestion=null;
  msg("你",o[2],"player");
  flag(o[3]);add(o[4]);
  session.resources.suspicion=cap(session.resources.suspicion+o[5]);session.resources.trust=cap(session.resources.trust+o[6]);
@@ -84,9 +85,26 @@ function useCard(id){
  else{msg("藏书鉴定",c.description)}
  const unlocked=rewards();store();draw();if(unlocked.length)toast("新成就："+unlocked.join("、"));
 }
-function talk(input){
+async function talk(input){
  const t=String(input||"").trim().slice(0,700);if(!t)return toast("先写下要说的话");if(!session||session.ended)return;
  msg("你",t,"player");
+ const oldStep=session.step,ref=session;
+ if(session.aiConsent&&aiEnabled&&(session.aiCalls||0)<18){
+  replying=true;session.aiCalls=(session.aiCalls||0)+1;store();toast("AI 酒馆正在回应…");
+  const s=STAGES[oldStep];
+  let out=null;
+  try{
+   out=await storyTurn({storyId:world.id,sceneId:["dead-letter","paper-ghost","scarlet-medicine","future-map","crossroads","handwriting","ending"][oldStep],day:session.day,scene:s.intro,choices:s.choices.map(o=>o[0]),transcript:session.log.slice(-12).map(x=>({role:x.role,text:x.text})),playerInput:t});
+  }catch{}
+  replying=false;
+  if(session!==ref||session.step!==oldStep)return;
+  if(out?.reply){
+   msg("DeepSeek · 酒馆主持人",out.reply,"ai");
+   if(out.suggestedIndex!==null)session.pendingSuggestion=out.suggestedIndex;
+   store();draw();return;
+  }
+  toast("AI 主持暂不可用，已自动回退本地酒馆");
+ }
  let answer="酒馆掌柜轻轻点头：你的话已记入卷宗。若要真正改变命运，还请选一项可以执行的行动。";
  if(/死人|死者|复活|还魂/.test(t))answer="掌柜答道：还魂七夜未必能消一生旧债，死人也不必服从活人。";
  else if(/宝物|奇物|诏书|纸人|契约/.test(t))answer="掌柜指向手牌：奇物有用途，也有边界。没有任何力量是白送的。";
@@ -109,7 +127,7 @@ function button(label,action,extra=""){return '<button class="button '+extra+'" 
 function gallery(){return world.achievements.map(a=>{const earned=book.achievements.includes(a.id);return'<div class="ach '+(earned?"":"locked")+'"><span class="symbol">'+(earned?"✧":"◇")+'</span>'+E(earned?a.title:a.hidden?"？？？":a.title)+'<small>'+(earned?"已解锁":"未发现")+'</small></div>'}).join("")}
 function cards(){return session.inventory.map(id=>{const c=world.cards.find(x=>x.id===id);if(!c)return"";return'<button class="treasure '+(selected===id?"selected":"")+'" data-card="'+E(id)+'"><span class="rarity">'+E({common:"凡品",uncommon:"常品",rare:"珍稀",epic:"异宝",forbidden:"禁忌"}[c.rarity])+'</span>'+artSlot(c.artSlot,"portrait")+'<b>'+E(c.title)+'</b><small>'+E(c.type)+'</small></button>'}).join("")}
 function intro(){
- return '<section class="grid-home"><div><div class="kicker">MING CHRONICLE · ORIGINAL HISTORICAL FANTASY</div><h1 class="hero-title">甲申异闻录<br>死者的诏书</h1><p class="lead">京师雨夜，死去二十年的内侍递来一封写着你未来抉择的诏书。你有十四夜寻找真相，在宝物、盟友、因果与历史之间决定自己的命运。</p><div class="pills"><span>7幕剧情</span><span>12张奇物卡</span><span>8项成就</span><span>多结局</span></div>'+button("启封第一夜 →","data-start")+button("查看收藏","data-album","secondary")+'<p class="caption">M0 试玩：本地状态机真实运行，支持卡牌与成就收集。AI 导演尚未接入此新模式，文字互动暂为本地演示。原有测试版仍可使用。</p><div class="grid-meta"><div class="meta"><strong>14夜</strong><small>故事期限</small></div><div class="meta"><strong>12张</strong><small>宝物与情报</small></div><div class="meta"><strong>3条</strong><small>基础终局</small></div></div></div><div class="intro-art">'+artSlot("scene.archive-night")+'</div></section>';
+ return '<section class="grid-home"><div><div class="kicker">MING CHRONICLE · ORIGINAL HISTORICAL FANTASY</div><h1 class="hero-title">甲申异闻录<br>死者的诏书</h1><p class="lead">京师雨夜，死去二十年的内侍递来一封写着你未来抉择的诏书。你有十四夜寻找真相，在宝物、盟友、因果与历史之间决定自己的命运。</p><div class="pills"><span>7幕剧情</span><span>12张奇物卡</span><span>8项成就</span><span>多结局</span></div>'+button("启封第一夜 →","data-start")+button("查看收藏","data-album","secondary")+'<p class="caption">M0 试玩：卡牌、成就、结局真实运行。可尝试 AI 主持，但服务端尚需单独启用；故障将自动退回本地。旧测试版不受影响。</p>'+(aiEnabled?'<label class="ai-consent" style="display:block;margin:10px 0;color:#e5c49d;font-size:12px"><input type="checkbox" id="opt-ai"/> 尝试 DeepSeek AI 主持（主动同意发送最近12条对话和新发言至模型；可能产生模型费用；默认关闭）</label>':'')+'<div class="grid-meta"><div class="meta"><strong>14夜</strong><small>故事期限</small></div><div class="meta"><strong>12张</strong><small>宝物与情报</small></div><div class="meta"><strong>3条</strong><small>基础终局</small></div></div></div><div class="intro-art">'+artSlot("scene.archive-night")+'</div></section>';
 }
 function endView(){
  const ending=world.endings.find(x=>x.id===session.ended),r=fit(),person=r.people[0],others=r.people.slice(1).map(x=>x.name).join("、");
@@ -117,7 +135,7 @@ function endView(){
 }
 function gameView(){
  const scene=STAGES[session.step],n=session.resources;
- return '<div class="game"><div class="scene-col"><div class="scene-visual">'+artSlot(world.milestones[session.step].artSlot)+'<div class="overlay"><div class="kicker">DAY '+session.day+' · '+E(scene.npc)+'</div><h2>'+E(world.milestones[session.step].title)+'</h2><p>卷宗 '+(session.step+1)+' / 7 · 你有权拒绝命运</p></div></div><div class="section"><h3>命数事件</h3><p class="narrative">'+E(scene.intro)+'</p></div><div class="section"><h3>酒馆交谈 · 卷宗日志</h3><div class="chatlog" id="chatlog">'+session.log.slice(-12).map(l=>'<div class="chat '+(l.role==="player"?"player":l.role==="local"?"local":"ai")+'"><small>'+E(l.who)+'</small><p>'+E(l.text)+'</p></div>').join("")+'</div><div class="input-row"><textarea id="talkbox" maxlength="700" placeholder="自由发言、询问、提出想法…"></textarea>'+button("对话","data-talk","secondary")+'</div><p class="caption">当前为本地模拟主持。自由说话会留卷，但真正改变卡牌和剧情的行动由下方规则内核处理；之后接 DeepSeek 导演。</p></div><div class="section"><h3>当前可执行的行动</h3><div class="action-list">'+scene.choices.map((o,i)=>'<button class="action" data-choice="'+i+'"><b>'+E(o[0])+'</b><small>'+E(o[1])+'</small></button>').join("")+'</div></div></div><aside class="side"><div class="sidebar-block"><h3 class="side-title">命数账本</h3><div class="stats">'+[["夜数",session.day+"/14"],["钱粮",n.coins],["信义",n.trust],["疑罪",n.suspicion]].map(x=>'<div class="stat"><strong>'+E(x[1])+'</strong><small>'+E(x[0])+'</small></div>').join("")+'</div><p class="caption">卡牌与资源由规则程序管理，不让AI凭空修改。</p></div><div class="sidebar-block"><h3 class="side-title">藏品手牌 · '+session.inventory.length+'</h3><div class="hand">'+cards()+'</div>'+(selected?renderCardDetail():"")+'</div><div class="sidebar-block"><h3 class="side-title">成就图鉴 · '+book.achievements.length+' / '+world.achievements.length+'</h3><div class="ach-list">'+gallery()+'</div>'+button("查看完整图鉴","data-album","ghost small")+'</div></aside></div>';
+ return '<div class="game"><div class="scene-col"><div class="scene-visual">'+artSlot(world.milestones[session.step].artSlot)+'<div class="overlay"><div class="kicker">DAY '+session.day+' · '+E(scene.npc)+'</div><h2>'+E(world.milestones[session.step].title)+'</h2><p>卷宗 '+(session.step+1)+' / 7 · 你有权拒绝命运</p></div></div><div class="section"><h3>命数事件</h3><p class="narrative">'+E(scene.intro)+'</p></div><div class="section"><h3>酒馆交谈 · 卷宗日志</h3><div class="chatlog" id="chatlog">'+session.log.slice(-12).map(l=>'<div class="chat '+(l.role==="player"?"player":l.role==="local"?"local":"ai")+'"><small>'+E(l.who)+'</small><p>'+E(l.text)+'</p></div>').join("")+'</div><div class="input-row"><textarea id="talkbox" maxlength="700" placeholder="自由发言、询问、提出想法…"></textarea>'+button("对话","data-talk","secondary")+'</div><p class="caption">'+(session.aiConsent?"本局已选择尝试 DeepSeek AI 主持；服务端尚未启用时会回退本地。":"本局为本地模拟主持，对话不发送给模型。")+' 资源、卡牌和成就只能经游戏规则程序改变。</p>'+(session.pendingSuggestion!==null&&Number.isInteger(session.pendingSuggestion)?'<div class="inset"><p>AI 建议按当前规则执行：<strong>'+E(scene.choices[session.pendingSuggestion]?.[0]||"")+'</strong></p>'+button("确认执行该行动","data-follow-ai","small")+'</div>':'')+'</div><div class="section"><h3>当前可执行的行动</h3><div class="action-list">'+scene.choices.map((o,i)=>'<button class="action" data-choice="'+i+'"><b>'+E(o[0])+'</b><small>'+E(o[1])+'</small></button>').join("")+'</div></div></div><aside class="side"><div class="sidebar-block"><h3 class="side-title">命数账本</h3><div class="stats">'+[["夜数",session.day+"/14"],["钱粮",n.coins],["信义",n.trust],["疑罪",n.suspicion]].map(x=>'<div class="stat"><strong>'+E(x[1])+'</strong><small>'+E(x[0])+'</small></div>').join("")+'</div><p class="caption">卡牌与资源由规则程序管理，不让AI凭空修改。</p></div><div class="sidebar-block"><h3 class="side-title">藏品手牌 · '+session.inventory.length+'</h3><div class="hand">'+cards()+'</div>'+(selected?renderCardDetail():"")+'</div><div class="sidebar-block"><h3 class="side-title">成就图鉴 · '+book.achievements.length+' / '+world.achievements.length+'</h3><div class="ach-list">'+gallery()+'</div>'+button("查看完整图鉴","data-album","ghost small")+'</div></aside></div>';
 }
 function renderCardDetail(){const c=world.cards.find(x=>x.id===selected);if(!c)return"";return'<div class="card-detail"><strong>'+E(c.title)+'</strong><p>'+E(c.description)+'</p><p>限制：'+E(c.restrictions.join("；")||"无")+'</p>'+button("调查 / 使用","data-use","small")+'</div>'}
 function bookView(){return'<div class="collection-modal"><div class="collection-inner"><button class="subtle-button exit" data-close>关闭 ✕</button><div class="kicker">COLLECTORS ARCHIVE</div><h2>异闻图鉴</h2><p class="caption">收藏保存在本机浏览器，可以跨周目解锁。</p><h3>卡牌：'+book.cards.length+' / '+world.cards.length+'</h3><div class="collection-grid">'+world.cards.map(c=>'<div class="treasure '+(book.cards.includes(c.id)?"":"ach locked")+'">'+artSlot(c.artSlot,"portrait")+'<b>'+E(book.cards.includes(c.id)?c.title:"未知奇物")+'</b></div>').join("")+'</div><h3>成就：'+book.achievements.length+' / '+world.achievements.length+'</h3><div class="ach-list">'+gallery()+'</div><h3>结局：'+book.endings.length+' / '+world.endings.length+'</h3><div class="ach-list">'+world.endings.map(e=>'<div class="ach '+(book.endings.includes(e.id)?"":"locked")+'">◈ '+E(book.endings.includes(e.id)?e.name:"未达成")+'</div>').join("")+'</div></div></div>'}
@@ -130,6 +148,7 @@ document.addEventListener("click",ev=>{
  else if(b.hasAttribute("data-card")){selected=b.dataset.card;draw()}
  else if(b.hasAttribute("data-use"))useCard(selected);
  else if(b.hasAttribute("data-talk"))talk(document.querySelector("#talkbox")?.value);
+ else if(b.hasAttribute("data-follow-ai")&&session?.pendingSuggestion!==null)choose(session.pendingSuggestion);
  else if(b.hasAttribute("data-album")){modal=true;draw()}
  else if(b.hasAttribute("data-close")){modal=false;draw()}
  else if(b.hasAttribute("data-export"))exportData();
