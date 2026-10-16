@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#131e22"><meta name="description" content="无须注册的开放式 AI 文字冒险。GM 用工具记住你创造的世界。">
+<title>异闻酒馆 · AI GM Harness</title><link rel="stylesheet" href="./styles.css">
+</head><body><header class="topbar">
+<a class="brand" href="../">◈ 异闻酒馆 <small>GM HARNESS / ALPHA</small></a>
+<div class="header-actions"><span class="server" id="server" role="status"><span class="dot"></span>正在检查 API</span><button class="light" id="restart">重开</button></div>
+</header>
+<main class="layout">
+<aside class="sidebar" aria-label="世界信息">
+<section class="panel intro"><div class="eyebrow">THE WORLD IS NOT WRITTEN YET</div>
+<h1>世界，由你行动。</h1><p>没有固定题目或剧情树。你说想做什么，GM 负责让世界回应。</p>
+<div class="stamp">无需账户 · 本机卷宗 · 按需加载</div></section>
+<section class="panel">
+<h2>世界账本 <span class="muted">WORLD STATE</span></h2>
+<div id="stat" class="stat"></div>
+<h3>持有奇物与物品 <span id="count" class="number">0</span></h3>
+<div id="cards" class="cardgrid"></div>
+<h3>已确立的事实</h3><ol id="facts" class="facts"></ol>
+</section>
+<section class="panel tools"><h2>设置与记录</h2>
+<label class="check"><input type="checkbox" id="consent"> 使用 DeepSeek GM（当前会话内容会发送到模型）</label>
+<label class="check"><input type="checkbox" id="use-guide"> 当轮附加 GM 技能文档（可选）</label>
+<div class="row"><button id="export" class="light" type="button">导出卷宗</button><a href="../experiments/gm-organs/GM.md" target="_blank" rel="noopener">查看 GM.md ↗</a></div>
+<p class="tiny">状态与对话保存在当前浏览器。每次联网发言需要 Cloudflare 人机验证；没有远端 AI 时不伪造回复。请勿输入个人秘密。</p>
+</section>
+</aside>
+<section class="center" aria-label="文字冒险对话">
+<div class="chapter"><div class="eyebrow">自由世界实验 · 开放文字行动</div><h2 id="chapter-title">京师 · 初入乱世</h2>
+<p id="chapter-lead">1644，夜雨中的旧档馆。你可以改变身份、前往任何地方，甚至创造一个新的故事方向。</p></div>
+<div class="transcript" id="transcript" role="log" aria-live="polite" aria-label="冒险对话记录"></div>
+<div class="draft-actions"><button data-suggestion="我先打听今夜城中发生了什么，不急着接受任何任务。">打听情报</button>
+<button data-suggestion="我假扮来自辽东的密使，要求见军镇幕僚。">伪装密使</button>
+<button data-suggestion="我想找一位懂得操纵纸人术的匠人，和他做一笔交易。">寻找奇人</button></div>
+<form id="chat" class="composer">
+<label for="prompt" class="sr-only">输入你在游戏中的行动</label>
+<textarea id="prompt" rows="3" maxlength="850" placeholder="你决定怎么做？可以自由对话、潜入、交易、创造方案……" required></textarea>
+<div class="composer-foot"><span id="status">先勾选 AI 同意框，等待接口可用</span><button type="submit" id="send" disabled>行动 →</button></div>
+</form>
+<div id="alert" class="alert" role="status" aria-live="polite"></div>
+</section>
+</main><footer><span>通用 GM Harness · 独立实验，不影响既有明清人物镜</span><a href="../mingqing-mirror/">历史人物镜像 ↗</a></footer>
+<script type="module" src="./app.js"></script>
+</body></html>
