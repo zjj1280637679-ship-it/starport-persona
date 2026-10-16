@@ -23,7 +23,7 @@
 
 ## 2026-10-16 最新补充：器官 × DNA 最小实验
 
-新增 [experiments/gm-organs/README.md](../experiments/gm-organs/README.md)、[organs.mjs](../experiments/gm-organs/organs.mjs)、[dna.mjs](../experiments/gm-organs/dna.mjs)。定义六种**候选**小器官：读书、账本、身份透镜、结构化表现、素材索引、GM 调度，并以最短代码例子描述可观测行为。通过无付费调用的 V8 等效测试（24 条断言，包括双回合记忆、NPC 不同称谓、版本冲突、显式变更授权与事务不部分提交）。注意这不等于真实 Node CLI/浏览器/DeepSeek 已经验收；不是通用 GM 运行完成。
+新增 [experiments/gm-organs/README.md](../experiments/gm-organs/README.md)、[organs.mjs](../experiments/gm-organs/organs.mjs)、[dna.mjs](../experiments/gm-organs/dna.mjs)。定义六种**候选**小器官：读书、账本、身份透镜、结构化表现、素材索引、GM 调度，并以最短代码例子描述可观测行为。通过无付费调用的 V8 等效测试（24 条断言，包括双回合记忆、NPC 不同称谓、版本冲突、显式变更授权与事务不部分提交）。随后新增 [Node 22 的 GitHub Actions DNA 自动验证](https://github.com/zjj1280637679-ship-it/starport-persona/actions/runs/38871825696)，**运行结果 success**。这证明当前 DNA 可以在标准 Node 环境执行；不等于浏览器/真实 DeepSeek 已经验收，更不等于通用 GM 运行完成。
 
 **更新后的工作目标**：优先把功能器官的真实行为与其最小 DNA 留给未来智能体，允许未来任意器官合并、替换、变异。不要先写完大框架来限制未来改造，更不能把今天的代码类名和函数数量当成原则。
 
