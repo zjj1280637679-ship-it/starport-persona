@@ -16,6 +16,15 @@ node experiments/gm-organs/dna.mjs
 
 **验证范围**：纯内存 + 模拟模型的函数示例；不是“Pi SDK 已运行”“DeepSeek 已联网”“在线存档已安全”或“AI 自由剧情已完成”。
 
+## GM 的最小启动层（新增）
+
+- [SYSTEM.txt](SYSTEM.txt)：**一句话**的 GM / DM 启动提示词；无需在这里遍历剧情。
+- [GM.md](GM.md)：主持经验的**可选附录**。关于自由行动、因果连续、角色局部认知、惊奇和工具职责的观察，而非必须执行的故事清单。
+- [dna.mjs](dna.mjs)：现在会实际读取 `SYSTEM.txt`、验证传入 GM 器官，并模拟按需查阅 `GM.md`，不向真实模型发请求。
+- [organs.mjs](organs.mjs)：`makeGM({model, library, world, approve, systemPrompt})` 可接收外部提示。文件格式、器官参数均是实验协议，可被替代。
+
+**注意：**现有实际云端 `/api/story/turn` 路由还没有接入这套 GM 提示词；此处是独立运行 DNA 验证，并非宣称公网 AI 主持已升级。
+
 ## 六种候选器官及其最小 DNA
 
 | 功能器官（当前命名） | 最小输入 | 可观察输出/行为 | 演化空间 |
