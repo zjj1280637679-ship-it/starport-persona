@@ -26,6 +26,8 @@ starport-persona/
 │   └── EVOLUTION.md
 ├── experiments/gm-organs/          ← 当前最新的可替换器官/DNA 验证
 │   ├── README.md                    ← 6 种候选功能及最小输入输出
+│   ├── SYSTEM.txt                   ← GM 一句启动提示，非完整规则书
+│   ├── GM.md                        ← 按需读取的主持经验附录
 │   ├── organs.mjs                   ← 独立可替换实现
 │   └── dna.mjs                      ← 无付费模型的最小样本断言
 ├── index.html / styles.css
