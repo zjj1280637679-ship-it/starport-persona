@@ -33,6 +33,14 @@
 - `makeGM()` 新增可注入 `systemPrompt`，而 `dna.mjs` 会从文件读取这条提示、断言 GM 能获得它，并模拟需要时查阅附录。
 - **功能边界**：模拟模型验证“提示词/文档/器官”的基本接缝；真实联网模型尚未验证，也未修改 Cloudflare Worker 生产路由。具体技术栈与 GM.md 规则仍可由未来 Agent 彻底替换。
 
+## 2026-10-16 新网页：GM API 验证实验
+
+新入口：[异闻酒馆](https://zjj1280637679-ship-it.github.io/starport-persona/gm-harness/)；源码 [gm-harness/README.md](../gm-harness/README.md)。纯静态界面有自由行动、动态 HTML 卡牌与表格、薄世界书索引、浏览器卷宗、导出、Turnstile 同意框。新增 Worker `/api/gm/turn` 可以将任意玩家行动送给 DeepSeek，并解析模型的世界变更提案（改变地区、身份、卡牌、事实等）；受服务器验证和单访客限流。
+
+**安全现状：GM_ENABLED 在 `wrangler.toml` 中默认 false，新增 GM_LIMITER，尚未向公众开放付费 GM 调用。** 使用已有 Cloudflare Worker 和 DeepSeek 账户，不要求游客或站长重新注册；仍须确认 Worker 最新代码是否已部署，并由站长批准开启付费开关和预算。旧 API、旧网页均保留。
+
+验证：GitHub Actions 独立 [GM Harness API Smoke](https://github.com/zjj1280637679-ship-it/starport-persona/actions/runs/38874290883) 已通过模拟 DeepSeek/Turnstile 的完整两轮 API 流程，包括拒绝危险世界变更，不产生实际费用。**这不是付费模型在线验证、数据库持久化或真的 Pi SDK**。
+
 ## 已发现且需要交代给未来的冲突（不掩饰）
 
 1. `deepseek-worker/README.md` 的原始标题称“未部署”、默认 `AI_ENABLED=false`，与现有 Cloudflare 截图和仓库 `wrangler.toml` 不符。部署教程保留作历史资料；**不要以旧教程当现状**。
