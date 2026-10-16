@@ -30,6 +30,10 @@ starport-persona/
 │   ├── GM.md                        ← 按需读取的主持经验附录
 │   ├── organs.mjs                   ← 独立可替换实现
 │   └── dna.mjs                      ← 无付费模型的最小样本断言
+├── gm-harness/                      ← 独立无注册的 AI GM 网页（API 默认关闭）
+│   ├── index.html / styles.css
+│   ├── app.js / books.json
+│   ├── test.mjs / README.md
 ├── index.html / styles.css
 ├── src/
 │   ├── app.js                       ← 原站交互
