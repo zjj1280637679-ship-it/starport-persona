@@ -50,7 +50,8 @@ starport-persona/
 │   ├── src/index.js                 ← API、Turnstile、限流、模型调用
 │   └── README.md                    ← 较旧的初始部署说明
 └── .github/workflows/
-    └── mingqing-live-smoke.yml     ← 旧题库/PW/健康与安全烟雾测试
+    ├── mingqing-live-smoke.yml     ← 旧题库/PW/健康与安全烟雾测试
+    └── gm-organs-dna.yml           ← 使用 Node 22 独立运行器官 DNA
 ```
 
 ## 当前实现的界限
