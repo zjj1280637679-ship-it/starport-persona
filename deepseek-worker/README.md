@@ -1,3 +1,7 @@
+> **部署状态提醒（2026-10-16）**：本文写作时尚未部署，因此下方“未部署”“默认 AI_ENABLED=false”属于**旧教程内容**。用户后来已在 Cloudflare 创建 Worker，且曾通过 `/health` 的 `ok/configured/enabled=true` 检查；仓库当前 `wrangler.toml` 已将 `AI_ENABLED=true`，新实验路由 `/api/story/turn` 另受 `AI_STORY_ENABLED` 限制。**线上版本、真实付费调用与新路由仍需独立核验。** 见 [docs/HANDOFF.md](../docs/HANDOFF.md)、[docs/WORKTREE.md](../docs/WORKTREE.md)。切勿把本教程误当当前实际部署记录。
+
+---
+
 # DeepSeek V4.1 Flash · 共享安全中转（未部署）
 
 该目录是服务器代码准备区，不是已经开通的在线 API。**默认 `AI_ENABLED = "false"`**，尚未配置 Cloudflare、DeepSeek 密钥、Turnstile 密钥之前，两个 GitHub Pages 网站均不会执行付费调用。
