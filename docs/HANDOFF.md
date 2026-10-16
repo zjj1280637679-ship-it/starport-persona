@@ -27,6 +27,12 @@
 
 **更新后的工作目标**：优先把功能器官的真实行为与其最小 DNA 留给未来智能体，允许未来任意器官合并、替换、变异。不要先写完大框架来限制未来改造，更不能把今天的代码类名和函数数量当成原则。
 
+## 2026-10-16 最新补充：极简 GM 提示与可选文档
+
+- [SYSTEM.txt](../experiments/gm-organs/SYSTEM.txt) 只有一句 GM / DM 主持提示；[GM.md](../experiments/gm-organs/GM.md) 是按需参考的薄文档，避免将脚本和完整世界塞入常驻提示。
+- `makeGM()` 新增可注入 `systemPrompt`，而 `dna.mjs` 会从文件读取这条提示、断言 GM 能获得它，并模拟需要时查阅附录。
+- **功能边界**：模拟模型验证“提示词/文档/器官”的基本接缝；真实联网模型尚未验证，也未修改 Cloudflare Worker 生产路由。具体技术栈与 GM.md 规则仍可由未来 Agent 彻底替换。
+
 ## 已发现且需要交代给未来的冲突（不掩饰）
 
 1. `deepseek-worker/README.md` 的原始标题称“未部署”、默认 `AI_ENABLED=false`，与现有 Cloudflare 截图和仓库 `wrangler.toml` 不符。部署教程保留作历史资料；**不要以旧教程当现状**。
