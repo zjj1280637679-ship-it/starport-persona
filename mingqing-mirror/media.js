@@ -12,6 +12,33 @@ export const MEDIA={
  "icon.compass":{mode:"graphic"}, "icon.crown":{mode:"graphic"},
  "card.frame":{mode:"graphic"}
 };
+// Historic fantasy asset slots: graphic → image → GIF.
+Object.assign(MEDIA,{
+"story.jiashen.background":{mode:"graphic"},
+"scene.archive-night":{mode:"graphic"},
+"scene.paper-servant":{mode:"graphic"},
+"scene.revival-altar":{mode:"graphic"},
+"scene.star-map":{mode:"graphic"},
+"scene.river-inn":{mode:"graphic"},
+"scene.future-edict":{mode:"graphic"},
+"scene.finale":{mode:"graphic"},
+"card.future-edict":{mode:"graphic"},
+"card.paper-servant":{mode:"graphic"},
+"card.revival-pellet":{mode:"graphic"},
+"card.star-map":{mode:"graphic"},
+"card.old-copper-key":{mode:"graphic"},
+"card.sealed-account":{mode:"graphic"},
+"card.broken-oath":{mode:"graphic"},
+"card.border-scout":{mode:"graphic"},
+"card.river-ferry-token":{mode:"graphic"},
+"card.blood-ink-brush":{mode:"graphic"},
+"card.guest-pass":{mode:"graphic"},
+"card.ink-cicada":{mode:"graphic"},
+"ending.lantern-survival":{mode:"graphic"},
+"ending.ink-history":{mode:"graphic"},
+"ending.mountain-exile":{mode:"graphic"},
+"achievement.first-revelation":{mode:"graphic"}
+});
 function svg(kind){
  const common='<defs><linearGradient id="a" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#8b6142" stop-opacity=".09"/><stop offset=".55" stop-color="#d3ae6b" stop-opacity=".30"/><stop offset="1" stop-color="#9e5540" stop-opacity=".07"/></linearGradient></defs>';
  if(kind==="portrait")return '<svg viewBox="0 0 320 410" preserveAspectRatio="xMidYMid slice" aria-hidden="true">'+common+'<circle cx="162" cy="151" r="113" fill="none" stroke="#c3a277" stroke-width="1.4" opacity=".55"/><circle cx="162" cy="151" r="91" fill="none" stroke="#b18b65" opacity=".4"/><path d="M48 399 Q55 266 163 259 Q279 263 280 399Z" fill="url(#a)" stroke="#c3a277" stroke-width="1.5"/><path d="M124 135 Q130 83 162 83 Q198 83 199 135 L193 203 Q180 232 162 240 Q137 232 130 200Z" fill="#bb9461" fill-opacity=".23" stroke="#c3a277" stroke-width="1.4"/><path d="M117 114 Q163 61 212 113 M120 104 H209 M144 89 V73 H179 V89" stroke="#d6bc8b" fill="none" stroke-width="2"/><path d="M90 308 Q162 288 233 309 M67 361 Q162 344 256 361" stroke="#d3ae6b" fill="none" opacity=".65"/></svg>';
