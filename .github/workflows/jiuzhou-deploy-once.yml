@@ -1,0 +1,28 @@
+name: Deploy Jiuzhou Worker If Authorized
+on:
+  push:
+    paths:
+      - '.github/workflows/jiuzhou-deploy-once.yml'
+permissions:
+  contents: read
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Deploy only when Cloudflare access already exists in repository secrets
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: deepseek-worker
+        run: |
+          if [ -z "${CLOUDFLARE_API_TOKEN}" ]; then
+            echo "::warning::GitHub repository has no CLOUDFLARE_API_TOKEN secret; cannot deploy Worker from GitHub Actions."
+            exit 0
+          fi
+          echo "Cloudflare token configured; attempting deployment using existing Wrangler config."
+          npx --yes wrangler@4 deploy
