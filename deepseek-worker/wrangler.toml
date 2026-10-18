@@ -7,8 +7,8 @@ compatibility_date = "2026-10-13"
 AI_ENABLED = "true"
 # GM needs an explicit operator enable; public model calls incur spend.
 GM_ENABLED = "false"
-# New interactive novel: explicitly opt in after confirming spend controls.
-JIUZHOU_ENABLED = "false"
+# Owner approved live test for Jiuzhou; rate limiting and Turnstile remain mandatory.
+JIUZHOU_ENABLED = "true"
 DEEPSEEK_MODEL = "deepseek-flash"
 ALLOWED_ORIGIN = "https://zjj1280637679-ship-it.github.io"
 
