@@ -1,0 +1,22 @@
+name: Jiuzhou Shared GM Gateway Smoke
+on:
+  push:
+    paths:
+      - 'deepseek-worker/src/index.js'
+      - 'deepseek-worker/test-jiuzhou.mjs'
+      - '.github/workflows/jiuzhou-gateway-smoke.yml'
+  pull_request:
+    paths:
+      - 'deepseek-worker/src/index.js'
+      - 'deepseek-worker/test-jiuzhou.mjs'
+      - '.github/workflows/jiuzhou-gateway-smoke.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check deepseek-worker/src/index.js
+      - run: node deepseek-worker/test-jiuzhou.mjs
