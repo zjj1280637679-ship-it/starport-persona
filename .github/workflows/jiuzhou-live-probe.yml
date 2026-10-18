@@ -1,0 +1,44 @@
+name: Jiuzhou Public Worker Live Probe
+on:
+  push:
+    paths:
+      - '.github/workflows/jiuzhou-live-probe.yml'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Probe public deployed Worker and Pages
+        run: |
+          python3 - <<'PY'
+          import json,time,urllib.request,urllib.error
+          worker='https://starport-deepseek-gateway.zjj1280637679.workers.dev'
+          website='https://zjj1280637679-ship-it.github.io/jiuzhou-chronicles/'
+          def get(u,method='GET',headers=None,body=None):
+            r=urllib.request.Request(u,method=method,headers=headers or {},data=body)
+            try:
+              with urllib.request.urlopen(r,timeout=18) as x:return x.status,x.read().decode('utf-8','replace')
+            except urllib.error.HTTPError as e:return e.code,e.read().decode('utf-8','replace')
+          st,html=get(website)
+          print('GitHub Pages:',st,'has version script:',('ai-gateway-config.js' in html),flush=True)
+          if st!=200 or 'ai-gateway-config.js' not in html:raise AssertionError('Pages frontend not deployed')
+          for n in range(9):
+            st,data=get(worker+'/health')
+            print('Worker /health attempt',n+1,'HTTP',st,data[:380],flush=True)
+            if st==200:
+              state=json.loads(data)
+              if all(state.get(k) is True for k in ['ok','configured','enabled','jiuzhouEnabled']):break
+            time.sleep(12)
+          else:raise AssertionError('Worker not deployed/ready: needs operator Cloudflare deploy')
+          origin='https://zjj1280637679-ship-it.github.io'
+          p='{"mode":"story","messages":[]}'
+          st,data=get(worker+'/api/jiuzhou/turn','POST',{'Origin':origin,'Content-Type':'application/json'},p.encode())
+          print('Missing Turnstile:',st,data[:260],flush=True)
+          if st!=403 or 'challenge_required' not in data:raise AssertionError('Reject-on-missing-challenge policy not active')
+          st,data=get(worker+'/api/jiuzhou/turn','POST',{'Origin':'https://untrusted.example','Content-Type':'application/json'},p.encode())
+          print('Untrusted origin:',st,data[:260],flush=True)
+          if st!=403 or 'origin_rejected' not in data:raise AssertionError('Cross-origin rejection not active')
+          print('PASS: live gateway up, guarded, ready for real interactive paid request')
+          PY
