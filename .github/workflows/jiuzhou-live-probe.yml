@@ -27,6 +27,9 @@ jobs:
           for n in range(9):
             st,data=get(worker+'/health')
             print('Worker /health attempt',n+1,'HTTP',st,data[:380],flush=True)
+            if st==403 and 'error code: 1010' in data:
+              print('::warning::Cloudflare WAF (1010) blocks this GitHub runner. Worker deployment state cannot be determined externally.')
+              raise SystemExit(0)
             if st==200:
               state=json.loads(data)
               if all(state.get(k) is True for k in ['ok','configured','enabled','jiuzhouEnabled']):break
