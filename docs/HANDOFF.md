@@ -2,6 +2,8 @@
 
 ## 2026-10-19 后续明确授权：九州取消自设门槛
 
+合并期间发现远端新增可轮换邀请码；用户再次明确选择“连新邀请码也取消，公开直接调用”。当前九州不校验 `JIUZHOU_INVITE_CODE`，健康响应 `inviteRequired:false`。合并保留远端其他改动，不读取或修改邀请码 Secret。
+
 本阶段基于已合并 `a588978`。公开 Site Key 修正后，用户完成真实 Turnstile 控件，但 Worker 仍返回 `challenge_required`，尚未获得模型剧情。用户随后明确选择“连频率及输出上限也取消”，授权九州访客直接使用现有 DeepSeek 额度。最新授权取代下方针对九州的站长启用、Turnstile、每 IP 次数和自设输出限额；其他作品接口保留原有行为。
 
 新源码 `/api/jiuzhou/turn` 只要求服务端 `DEEPSEEK_API_KEY`、正确来源和合法游戏输入，不读取 `AI_ENABLED` / `JIUZHOU_ENABLED`，不依赖 Turnstile Secret 或限流绑定，不调用 Siteverify 或限流。配置删除 `JIUZHOU_ENABLED`，遗留环境值也被忽略。`jiuzhouReady` / 有效 `jiuzhouEnabled` 仅由模型 Key 是否存在决定；`jiuzhouAccess:{challenge:false,rateLimit:false,outputLimit:"provider"}` 明示行为，旧 `configured/enabled` 字段继续服务旧接口。
