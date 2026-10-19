@@ -201,6 +201,13 @@ function jiuzhouUpstreamError(status){
  return new JiuzhouError(status>=500?503:502,status>=500?"upstream_unavailable":"upstream_request_rejected",status);
 }
 async function handleJiuzhouTurn(body,env){
+ if(body.mode==="agent"){
+  const {handleJiuzhouAgentTurn,JiuzhouAgentError}=await import("./jiuzhou-agent.mjs");
+  try{return await handleJiuzhouAgentTurn(body,env)}catch(error){
+   if(error instanceof JiuzhouAgentError)throw new JiuzhouError(error.status,error.code,error.upstreamStatus);
+   throw error;
+  }
+ }
  const mode=body.mode;
  if(mode!=="story"&&mode!=="suture")throw new JiuzhouError(400,"invalid_mode");
  if(mode==="story"&&body.expectedLength!==undefined&&![500,2000,5000].includes(body.expectedLength))throw new JiuzhouError(400,"invalid_length");
@@ -275,7 +282,7 @@ export default {
    const limiters={ai:typeof env.AI_LIMITER?.limit==="function",gm:typeof env.GM_LIMITER?.limit==="function"};
    return reply(200,{ok:true,configured,enabled:env.AI_ENABLED==="true",storyEnabled:env.AI_STORY_ENABLED==="true",gmEnabled:env.GM_ENABLED==="true",jiuzhouEnabled:jiuzhouReady,
     model:publicModel(env),limiters,inviteRequired:false,
-    jiuzhouReady,jiuzhouLongFormThinking:true,jiuzhouAccess:{challenge:false,rateLimit:false,outputLimit:"provider"}},origin===allowed?origin:"");
+    jiuzhouReady,jiuzhouLongFormThinking:true,jiuzhouAgentTransport:true,jiuzhouAccess:{challenge:false,rateLimit:false,outputLimit:"provider"}},origin===allowed?origin:"");
   }
   if(!origin||origin!==allowed)return reply(403,{error:"origin_rejected"});
   if(request.method==="OPTIONS"){
