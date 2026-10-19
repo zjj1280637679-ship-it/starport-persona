@@ -32,16 +32,16 @@ jobs:
               raise SystemExit(0)
             if st==200:
               state=json.loads(data)
-              if all(state.get(k) is True for k in ['ok','configured','enabled','jiuzhouEnabled']):break
+              if state.get('ok') is True and state.get('jiuzhouReady') is True:break
             time.sleep(12)
           else:raise AssertionError('Worker not deployed/ready: needs operator Cloudflare deploy')
           origin='https://zjj1280637679-ship-it.github.io'
           p='{"mode":"story","messages":[]}'
           st,data=get(worker+'/api/jiuzhou/turn','POST',{'Origin':origin,'Content-Type':'application/json'},p.encode())
-          print('Missing Turnstile:',st,data[:260],flush=True)
-          if st!=403 or 'challenge_required' not in data:raise AssertionError('Reject-on-missing-challenge policy not active')
+          print('Invalid story payload (no paid call):',st,data[:260],flush=True)
+          if st!=400 or 'invalid_messages' not in data:raise AssertionError('Direct Jiuzhou route must validate input without requiring Turnstile')
           st,data=get(worker+'/api/jiuzhou/turn','POST',{'Origin':'https://untrusted.example','Content-Type':'application/json'},p.encode())
           print('Untrusted origin:',st,data[:260],flush=True)
           if st!=403 or 'origin_rejected' not in data:raise AssertionError('Cross-origin rejection not active')
-          print('PASS: live gateway up, guarded, ready for real interactive paid request')
+          print('PASS: live Jiuzhou gateway ready, input/origin validation active; no real model call performed')
           PY

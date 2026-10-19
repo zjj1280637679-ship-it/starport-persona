@@ -3,11 +3,13 @@ on:
   push:
     paths:
       - 'deepseek-worker/src/index.js'
+      - 'deepseek-worker/wrangler.toml'
       - 'deepseek-worker/test-jiuzhou.mjs'
       - '.github/workflows/jiuzhou-gateway-smoke.yml'
   pull_request:
     paths:
       - 'deepseek-worker/src/index.js'
+      - 'deepseek-worker/wrangler.toml'
       - 'deepseek-worker/test-jiuzhou.mjs'
       - '.github/workflows/jiuzhou-gateway-smoke.yml'
 jobs:
