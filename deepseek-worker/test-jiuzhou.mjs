@@ -5,7 +5,7 @@ const raw=fs.readFileSync(new URL("./src/index.js",import.meta.url),"utf8");
 const worker=(await import("data:text/javascript;base64,"+Buffer.from(raw).toString("base64"))).default;
 const ORIGIN="https://zjj1280637679-ship-it.github.io";
 let calls=[],modelRequests=[],upstreamFailure=null;
-const sample={mode:"story",model:"arbitrary-unsafe-model",
+const sample={mode:"story",model:"arbitrary-unsafe-model",thinking:{type:"enabled"},reasoning_effort:"high",
  messages:[{role:"system",content:"游戏规则"},{role:"system",content:"大明末年历史大纲"},
  {role:"user",content:"玩家决定赶赴京师"}],max_tokens:3000};
 // Legacy flags are false and both challenge/rate bindings are intentionally absent.
@@ -27,8 +27,8 @@ globalThis.fetch=async function(url,options){
   assert.ok(!options.body.includes("fake-server-only-key"),"secret may appear only in header");
   assert.equal(options.headers.Authorization,"Bearer fake-server-only-key");
   if(upstreamFailure)return upstreamFailure();
-  return Response.json({choices:[{message:{content:JSON.stringify({beats:[{speaker:"旁白",text:"城门已开"}],choices:[{text:"进城"},{text:"离开"},{text:"等候"}]})},finish_reason:"stop"}],
-    usage:{prompt_tokens:200,completion_tokens:70}});
+  return Response.json({choices:[{message:{content:JSON.stringify({beats:[{speaker:"旁白",text:"城门已开"}],choices:[{text:"进城"},{text:"离开"},{text:"等候"}]}),reasoning_content:"private-reasoning-must-not-reach-the-browser"},finish_reason:"stop"}],
+    usage:{prompt_tokens:200,completion_tokens:70,completion_tokens_details:{reasoning_tokens:20}}});
  }
  throw Error("unexpected fetch "+url);
 };
@@ -44,6 +44,7 @@ try {
  },"legacy flags stay independent of Jiuzhou access");
  assert.equal(healthData.model,"deepseek-flash");
  assert.equal(healthData.jiuzhouReady,true);
+ assert.equal(healthData.jiuzhouLongFormThinking,true,"capability marker reports the deployed long-form strategy, not generation quality");
  assert.equal(healthData.inviteRequired,false,"invitations were explicitly removed");
  assert.ok(!JSON.stringify(healthData).includes("unused-test-invitation"));
  assert.deepEqual(healthData.limiters,{ai:false,gm:false});
@@ -60,7 +61,10 @@ try {
  const data=await successful.json();
  assert.equal(data.model,"deepseek-flash");
  assert.equal(data.choices[0].finish_reason,"stop");
- assert.deepEqual(data.usage,{prompt_tokens:200,completion_tokens:70});
+ assert.deepEqual(data.usage,{prompt_tokens:200,completion_tokens:70,completion_tokens_details:{reasoning_tokens:20}});
+ assert.ok(!JSON.stringify(data).includes("private-reasoning"),"only usage counts, never provider reasoning text, reach the client");
+ assert.equal(modelRequests.at(-1).thinking.type,"disabled","ordinary story and connection requests keep thinking disabled");
+ assert.ok(!Object.hasOwn(modelRequests.at(-1),"reasoning_effort"),"client thinking knobs do not override the short-request policy");
  assert.equal(JSON.parse(data.choices[0].message.content).beats[0].speaker,"旁白");
  assert.equal(calls.filter(x=>x.includes("api.deepseek.com")).length,1);
  assert.equal(modelRequests.at(-1).max_tokens,3000);
@@ -101,9 +105,15 @@ try {
   assert.equal(primarySystem.role,"system");
   for(const fragment of fragments)assert.ok(primarySystem.content.includes(fragment),"server-authoritative story prompt contains "+fragment);
   assert.ok(primarySystem.content.includes("剧情完整收束后再给出3项下一步行动建议"));
+  assert.equal(modelRequests.at(-1).thinking.type,expectedLength===5000?"enabled":"disabled");
+  if(expectedLength===5000)assert.equal(modelRequests.at(-1).reasoning_effort,"high");
+  else assert.ok(!Object.hasOwn(modelRequests.at(-1),"reasoning_effort"));
+  assert.ok(!JSON.stringify(await lengthResult.json()).includes("private-reasoning"));
  }
  assert.equal((await worker.fetch(request({...sample,mode:"suture",expectedLength:5000}),env)).status,200);
  assert.ok(!modelRequests.at(-1).messages[0].content.includes("3500–4800字"),"story length preferences do not change suture editing");
+ assert.equal(modelRequests.at(-1).thinking.type,"disabled","suture and the independent connection test keep thinking disabled");
+ assert.ok(!Object.hasOwn(modelRequests.at(-1),"reasoning_effort"));
  assert.equal(calls.filter(x=>x.includes("siteverify")).length,0,"Jiuzhou never calls Turnstile");
  const beforeInvalid=modelRequests.length;
  const tooLarge=await worker.fetch(request({...sample,messages:[{role:"system",content:"game"},{role:"system",content:"长".repeat(30000)},{role:"user",content:"行动"}]}),enabledEnv);
@@ -184,6 +194,14 @@ try {
   const truncatedError=await truncated.json();
   assert.deepEqual(truncatedError,{error:"output_truncated",keep:true});
   assert.ok(!JSON.stringify(truncatedError).includes("private-provider-detail"));
+ }
+ for(const finish_reason of ["insufficient_system_resource","aborted","content_filter","tool_calls"]){
+  upstreamFailure=()=>Response.json({choices:[{message:{content:JSON.stringify({beats:[{text:"private-interrupted-content"}],choices:[]}),reasoning_content:"private-interrupted-reasoning"},finish_reason}],usage:{completion_tokens:100}});
+  const incomplete=await worker.fetch(request(),env);
+  assert.equal(incomplete.status,502,"a non-natural finish cannot report a complete generation");
+  const incompleteError=await incomplete.json();
+  assert.deepEqual(incompleteError,{error:"output_incomplete",keep:true});
+  assert.ok(!JSON.stringify(incompleteError).includes("private-interrupted"));
  }
  upstreamFailure=null;
  // Older products retain their switches, quotas and Turnstile checks.
