@@ -1,0 +1,29 @@
+name: Mini adventure isolated smoke
+on:
+  push:
+    paths:
+      - 'mini-adventure/**'
+      - 'deepseek-worker/src/mini-adventure.mjs'
+      - 'deepseek-worker/src/index.js'
+      - 'deepseek-worker/test-mini-adventure.mjs'
+      - '.github/workflows/mini-adventure-ci.yml'
+  pull_request:
+    paths:
+      - 'mini-adventure/**'
+      - 'deepseek-worker/src/mini-adventure.mjs'
+      - 'deepseek-worker/src/index.js'
+      - 'deepseek-worker/test-mini-adventure.mjs'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check deepseek-worker/src/index.js
+      - run: node --check deepseek-worker/src/mini-adventure.mjs
+      - run: node deepseek-worker/test-mini-adventure.mjs
+      - name: Static shell exists
+        run: grep -q 'id="action"' mini-adventure/index.html && grep -q 'id="adminDialog"' mini-adventure/index.html
