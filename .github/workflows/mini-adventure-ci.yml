@@ -25,5 +25,8 @@ jobs:
       - run: node --check deepseek-worker/src/index.js
       - run: node --check deepseek-worker/src/mini-adventure.mjs
       - run: node deepseek-worker/test-mini-adventure.mjs
+      - name: Bundle Cloudflare Worker without deploying (no paid requests)
+        working-directory: deepseek-worker
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/mini-adventure-bundle
       - name: Static shell exists
         run: grep -q 'id="action"' mini-adventure/index.html && grep -q 'id="adminDialog"' mini-adventure/index.html
