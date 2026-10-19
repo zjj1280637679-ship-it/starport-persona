@@ -230,12 +230,14 @@ async function handleJiuzhouTurn(body,env){
  ];
  // DeepSeek's documented provider range; valid caller values are forwarded without clamping.
  if(body.max_tokens!==undefined&&(!Number.isSafeInteger(body.max_tokens)||body.max_tokens<1||body.max_tokens>393216))throw new JiuzhouError(400,"invalid_max_tokens");
+ const longFormThinking=mode==="story"&&body.expectedLength===5000;
  let upstream,data;
  try{
  upstream=await fetch(DS_URL,{
   method:"POST",headers:{"content-type":"application/json",Authorization:"Bearer "+env.DEEPSEEK_API_KEY},
   body:JSON.stringify({model:env.DEEPSEEK_MODEL||"deepseek-flash",stream:false,
-   thinking:{type:"disabled"},response_format:{type:"json_object"},
+   thinking:{type:longFormThinking?"enabled":"disabled"},
+   ...(longFormThinking?{reasoning_effort:"high"}:{}),response_format:{type:"json_object"},
    ...(body.max_tokens===undefined?{}:{max_tokens:body.max_tokens}),messages})
  });
  if(!upstream.ok)throw jiuzhouUpstreamError(upstream.status);
@@ -250,6 +252,7 @@ async function handleJiuzhouTurn(body,env){
  }
  const choice=data?.choices?.[0];
  if(choice?.finish_reason==="length")throw new JiuzhouError(502,"output_truncated");
+ if(choice?.finish_reason&&choice.finish_reason!=="stop")throw new JiuzhouError(502,"output_incomplete");
  const content=choice?.message?.content;
  if(typeof content!=="string"||content.length<10||!isObject(jsonParse(content)))throw new JiuzhouError(502,"invalid_game_response");
  // Preserve the official chat-completions response shape already consumed by the game.
@@ -267,7 +270,7 @@ export default {
    const limiters={ai:typeof env.AI_LIMITER?.limit==="function",gm:typeof env.GM_LIMITER?.limit==="function"};
    return reply(200,{ok:true,configured,enabled:env.AI_ENABLED==="true",storyEnabled:env.AI_STORY_ENABLED==="true",gmEnabled:env.GM_ENABLED==="true",jiuzhouEnabled:jiuzhouReady,
     model:publicModel(env),limiters,inviteRequired:false,
-    jiuzhouReady,jiuzhouAccess:{challenge:false,rateLimit:false,outputLimit:"provider"}},origin===allowed?origin:"");
+    jiuzhouReady,jiuzhouLongFormThinking:true,jiuzhouAccess:{challenge:false,rateLimit:false,outputLimit:"provider"}},origin===allowed?origin:"");
   }
   if(!origin||origin!==allowed)return reply(403,{error:"origin_rejected"});
   if(request.method==="OPTIONS"){
