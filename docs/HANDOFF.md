@@ -1,5 +1,19 @@
 # 接手状态账本 / HANDOFF
 
+## 2026-10-19 最新核验：九州共享 Worker
+
+下方 2026-10-16 表格是历史快照。最新线上 `/health` 返回 `{ok:true,configured:true,enabled:true,storyEnabled:false,gmEnabled:false,jiuzhouEnabled:true}`，九州路由已开启；不能继续将“未部署新路由”当作当前故障原因。GitHub Pages 来源的九州路由 OPTIONS 返回 204 与正确 CORS 头，无 Turnstile 的 POST 返回 403 `challenge_required`。探测出口为 Cloudflare ZRH，不代表中国大陆能访问 Worker；用户确认网页本身能够打开，本次保留现有入口。入口为 `https://zjj1280637679-ship-it.github.io/jiuzhou-chronicles/`，后端继续使用本仓库 `deepseek-worker/`，没有新建供应商账户或将 Secret 放入前端。
+
+**已确认的连接根因**：在 Cloudflare 控制台实查，现有 `starport-mingqing-ai` 是 Managed 模式，允许域名 `zjj1280637679-ship-it.github.io`；正确公开 Site Key 为 `0x4AAAAAAFVa3XMIy4rCu3Gq`（24 字符）。两个仓库的公开配置都漏掉末尾 `q`，导致浏览器验证失败。本地已修复 `jiuzhou-chronicles/ai-gateway-config.js` 与本仓库 `mingqing-mirror/ai-config.js`，没有读取、替换或修改任何 Secret。修复基线为 `47e7d58`。
+
+**部署证据与纠正**：Cloudflare 控制台确认已有本仓库 `main` 的 Git 自动构建发布，生产版本 `06683db1` 来自 `47e7d58`，构建 Ready（23 秒），`AI_LIMITER` 和 `GM_LIMITER` 均已绑定。旧 GitHub 部署工作流因无 Token 绿色跳过，是冗余流程状态，不能由此推断生产缺少部署。继续沿用现有 Cloudflare Git 部署，无需新建 Cloudflare 或 GitHub Token。GitHub 工作流改为 `workflow_dispatch` 手动备用，不再监听推送；手动执行时缺少既有凭据会明确失败。
+
+本次后端修复补充 `/health` 的公开模型名、限流绑定状态与 `jiuzhouReady`，保留已有健康字段含义；九州 API 区分请求格式、模型鉴权、余额/限流、上游故障、超时与无效响应，错误仅返回固定代码及数字 HTTP 状态，不透传上游正文。短工作日志见 [WORKLOG-2026-10-19.md](WORKLOG-2026-10-19.md)。
+
+**验证范围**：Worker 语法、`deepseek-worker/test-jiuzhou.mjs` 的模拟上下游、`gm-harness/test.mjs` 旧接口回归及器官 DNA 均通过。**这些新增后端改动尚未生产部署，也未在本次后端测试中进行真实收费模型请求**；真实网页与生产联调结果应以主任务的实测记录补充，不能由绿色模拟测试推断。
+
+---
+
 当前核对时间：2026-10-16。适用于完全没有旧聊天记录的新 Agent。它是**可被刷新、修正的快照**；任何“完成”只代表列出的范围及验证方式。
 
 ## 一句话定位

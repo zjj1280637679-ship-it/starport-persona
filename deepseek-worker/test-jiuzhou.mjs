@@ -4,7 +4,7 @@ import fs from "node:fs";
 const raw=fs.readFileSync(new URL("./src/index.js",import.meta.url),"utf8");
 const worker=(await import("data:text/javascript;base64,"+Buffer.from(raw).toString("base64"))).default;
 const ORIGIN="https://zjj1280637679-ship-it.github.io";
-let calls=[];
+let calls=[],upstreamFailure=null;
 const sample={mode:"story",turnstileToken:"unit-test-challenge",model:"arbitrary-unsafe-model",
  messages:[{role:"system",content:"游戏规则"},{role:"system",content:"大明末年历史大纲"},
  {role:"user",content:"玩家决定赶赴京师"}],max_tokens:3000};
@@ -18,6 +18,7 @@ globalThis.fetch=async function(url,options){
  calls.push(String(url));
  if(String(url).includes("siteverify"))return Response.json({success:true,hostname:"zjj1280637679-ship-it.github.io"});
  if(String(url).includes("api.deepseek.com")){
+  if(upstreamFailure)return upstreamFailure();
   const b=JSON.parse(options.body);
   assert.equal(b.model,"deepseek-flash");
   assert.equal(b.response_format.type,"json_object");
@@ -34,6 +35,24 @@ try {
  assert.equal(disabled.status,503,"paid endpoint must be disabled by default");
  assert.equal(calls.length,0,"disabled endpoint must not call upstream");
  const enabledEnv={...env,JIUZHOU_ENABLED:"true"};
+ const health=await worker.fetch(new Request("https://test.workers.dev/health",{headers:{Origin:ORIGIN}}),enabledEnv);
+ const healthData=await health.json();
+ assert.deepEqual(Object.fromEntries(["ok","configured","enabled","jiuzhouEnabled"].map(k=>[k,healthData[k]])),{
+  ok:true,configured:true,enabled:true,jiuzhouEnabled:true
+ },"legacy health flags stay compatible");
+ assert.equal(healthData.model,"deepseek-flash");
+ assert.equal(healthData.jiuzhouReady,true);
+ assert.deepEqual(healthData.limiters,{ai:true,gm:true});
+ for(const binding of ["AI_LIMITER","GM_LIMITER"]){
+  const brokenEnv={...enabledEnv,[binding]:undefined};
+  const degraded=await (await worker.fetch(new Request("https://test.workers.dev/health"),brokenEnv)).json();
+  assert.equal(degraded.configured,true,"configured still means both secrets exist");
+  assert.equal(degraded.jiuzhouEnabled,true,"enable flag is separate from readiness");
+  assert.equal(degraded.jiuzhouReady,false,"missing limiter prevents a ready signal");
+  assert.equal((await worker.fetch(request(),brokenEnv)).status,503);
+ }
+ assert.ok(!JSON.stringify(healthData).includes("fake-server-only-key"));
+ assert.ok(!JSON.stringify(healthData).includes("fake-turnstile-secret"));
  const originBad=await worker.fetch(request(sample,"https://evil.example"),enabledEnv);
  assert.equal(originBad.status,403);
  const missingToken=await worker.fetch(request({...sample,turnstileToken:""}),enabledEnv);
@@ -41,10 +60,55 @@ try {
  const successful=await worker.fetch(request(),enabledEnv);
  assert.equal(successful.status,200);
  const data=await successful.json();
+ assert.equal(data.model,"deepseek-flash");
  assert.equal(JSON.parse(data.choices[0].message.content).beats[0].speaker,"旁白");
  assert.equal(calls.filter(x=>x.includes("api.deepseek.com")).length,1);
  const tooLarge=await worker.fetch(request({...sample,messages:[{role:"system",content:"game"},{role:"system",content:"长".repeat(30000)},{role:"user",content:"行动"}]}),enabledEnv);
- assert.notEqual(tooLarge.status,200,"oversize contexts cannot reach model");
+ assert.equal(tooLarge.status,413,"oversize contexts have an actionable status");
+ assert.equal((await tooLarge.json()).error,"context_too_large");
  assert.equal(calls.filter(x=>x.includes("api.deepseek.com")).length,1);
- console.log("Jiuzhou Worker gate: disabled, origin, challenge, model lock, output and size OK");
+ for(const [changes,code] of [
+  [{mode:"unknown"},"invalid_mode"],
+  [{messages:[]},"invalid_messages"],
+  [{messages:[...sample.messages.slice(0,2),{role:"user",content:42}]},"invalid_message_type"],
+  [{messages:[...sample.messages.slice(0,2),{role:"assistant",content:"行动"}]},"invalid_structure"]
+ ]){
+  const invalid=await worker.fetch(request({...sample,...changes}),enabledEnv);
+  assert.equal(invalid.status,400);
+  assert.equal((await invalid.json()).error,code);
+ }
+ assert.equal(calls.filter(x=>x.includes("api.deepseek.com")).length,1,"invalid input must not call model");
+ for(const [status,expectedStatus,code] of [
+  [400,502,"upstream_request_rejected"], [401,502,"upstream_auth_failed"],
+  [402,503,"upstream_quota_exceeded"], [403,502,"upstream_auth_failed"],
+  [404,502,"upstream_request_rejected"], [429,503,"upstream_rate_limited"],
+  [500,503,"upstream_unavailable"], [503,503,"upstream_unavailable"]
+ ]){
+  upstreamFailure=()=>new Response("private-provider-detail-and-key",{status});
+  const failed=await worker.fetch(request(),enabledEnv);
+  assert.equal(failed.status,expectedStatus);
+  assert.equal(failed.headers.get("access-control-allow-origin"),ORIGIN,"browser can read diagnostic errors");
+  const error=await failed.json();
+  assert.deepEqual(error,{error:code,keep:true,upstreamStatus:status});
+  assert.ok(!JSON.stringify(error).includes("private-provider-detail"));
+ }
+ for(const [name,status,code] of [
+  ["TimeoutError",504,"upstream_timeout"], ["AbortError",504,"upstream_timeout"],
+  ["TypeError",502,"upstream_network_error"]
+ ]){
+  upstreamFailure=()=>{const error=new Error("private-network-detail");error.name=name;throw error};
+  const failed=await worker.fetch(request(),enabledEnv);
+  assert.equal(failed.status,status);
+  assert.deepEqual(await failed.json(),{error:code,keep:true});
+ }
+ for(const response of [
+  ()=>new Response("invalid provider JSON"),
+  ()=>Response.json({choices:[{message:{content:"broken game JSON"}}]})
+ ]){
+  upstreamFailure=response;
+  const invalid=await worker.fetch(request(),enabledEnv);
+  assert.equal(invalid.status,502);
+  assert.deepEqual(await invalid.json(),{error:"invalid_game_response",keep:true});
+ }
+ console.log("Jiuzhou Worker: gates, model, compatible health/readiness, bounded input and sanitized failure diagnostics OK (mocked)");
 } finally {globalThis.fetch=realFetch}
