@@ -187,6 +187,26 @@ async function handleFreeGM(body,env){
 // 九州沉浮录: a restricted, opt-in story endpoint, NOT a general-purpose OpenAI proxy.
 // The browser never supplies a model ID, API credential, thinking budget or arbitrary tools.
 // AI stays disabled until the owner explicitly enables JIUZHOU_ENABLED and redeploys.
+
+// Invite gate is specific to /api/jiuzhou/turn. The public game and other APIs are unchanged.
+// Store JIUZHOU_INVITE_CODE only as a Cloudflare Secret, never in the front-end or [vars].
+// The invitation is verified on *every* paid turn, so rotating the Secret revokes old codes.
+async function checkJiuzhouInvite(supplied, secret) {
+ if (typeof secret!=="string" || !secret.trim()) return "unconfigured";
+ if (typeof supplied!=="string" || supplied.length<8 || supplied.length>128) return "denied";
+ const expected=secret.trim();
+ if (expected.length<8 || expected.length>128) return "unconfigured";
+ const encoder=new TextEncoder();
+ const [a,b]=await Promise.all([
+  crypto.subtle.digest("SHA-256",encoder.encode(supplied.trim())),
+  crypto.subtle.digest("SHA-256",encoder.encode(expected))
+ ]);
+ const left=new Uint8Array(a),right=new Uint8Array(b);
+ let difference=0;
+ for(let i=0;i<left.length;i++)difference|=left[i]^right[i];
+ return difference===0?"valid":"denied";
+}
+
 class JiuzhouError extends Error {
  constructor(status,code,upstreamStatus){super(code);this.status=status;this.code=code;this.upstreamStatus=upstreamStatus}
 }
@@ -255,9 +275,10 @@ export default {
   if(url.pathname==="/health"){
    const configured=Boolean(env.DEEPSEEK_API_KEY&&env.TURNSTILE_SECRET);
    const limiters={ai:typeof env.AI_LIMITER?.limit==="function",gm:typeof env.GM_LIMITER?.limit==="function"};
+    const inviteConfigured=typeof env.JIUZHOU_INVITE_CODE==="string"&&env.JIUZHOU_INVITE_CODE.trim().length>=8;
    return reply(200,{ok:true,configured,enabled:env.AI_ENABLED==="true",storyEnabled:env.AI_STORY_ENABLED==="true",gmEnabled:env.GM_ENABLED==="true",jiuzhouEnabled:env.JIUZHOU_ENABLED==="true",
-    model:publicModel(env),limiters,
-    jiuzhouReady:configured&&env.AI_ENABLED==="true"&&env.JIUZHOU_ENABLED==="true"&&limiters.ai&&limiters.gm},origin===allowed?origin:"");
+    model:publicModel(env),limiters,inviteRequired:true,inviteConfigured,
+    jiuzhouReady:configured&&env.AI_ENABLED==="true"&&env.JIUZHOU_ENABLED==="true"&&limiters.ai&&limiters.gm&&inviteConfigured},origin===allowed?origin:"");
   }
   if(!origin||origin!==allowed)return reply(403,{error:"origin_rejected"});
   if(request.method==="OPTIONS"){
@@ -273,6 +294,12 @@ export default {
   if(!isObject(body))return reply(400,{error:"invalid_payload"},origin);
   if(url.pathname==="/api/gm/turn"&&(env.GM_ENABLED!=="true"||!env.GM_LIMITER))return reply(503,{error:"gm_not_enabled"},origin);
    if(url.pathname==="/api/jiuzhou/turn"&&(env.JIUZHOU_ENABLED!=="true"||!env.GM_LIMITER))return reply(503,{error:"jiuzhou_not_enabled"},origin);
+   // Verify before the existing verification/rate layers and before contacting DeepSeek.
+   if(url.pathname==="/api/jiuzhou/turn"){
+    const invite=await checkJiuzhouInvite(body.inviteCode,env.JIUZHOU_INVITE_CODE);
+    if(invite==="unconfigured")return reply(503,{error:"invite_not_configured",keep:true},origin);
+    if(invite!=="valid")return reply(401,{error:"invite_invalid",keep:true},origin);
+   }
   const key=(request.headers.get("CF-Connecting-IP")||"anonymous").slice(0,80)+":"+url.pathname;
   const rate=await (["/api/gm/turn","/api/jiuzhou/turn"].includes(url.pathname)?env.GM_LIMITER:env.AI_LIMITER).limit({key});
   if(!rate.success)return reply(429,{error:"too_many_requests"},origin);

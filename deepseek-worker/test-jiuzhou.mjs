@@ -5,11 +5,11 @@ const raw=fs.readFileSync(new URL("./src/index.js",import.meta.url),"utf8");
 const worker=(await import("data:text/javascript;base64,"+Buffer.from(raw).toString("base64"))).default;
 const ORIGIN="https://zjj1280637679-ship-it.github.io";
 let calls=[],upstreamFailure=null;
-const sample={mode:"story",turnstileToken:"unit-test-challenge",model:"arbitrary-unsafe-model",
+const sample={mode:"story",turnstileToken:"unit-test-challenge",inviteCode:"test-invite-code-alpha",model:"arbitrary-unsafe-model",
  messages:[{role:"system",content:"游戏规则"},{role:"system",content:"大明末年历史大纲"},
  {role:"user",content:"玩家决定赶赴京师"}],max_tokens:3000};
 const env={ALLOWED_ORIGIN:ORIGIN,AI_ENABLED:"true",JIUZHOU_ENABLED:"false",DEEPSEEK_MODEL:"deepseek-flash",
- DEEPSEEK_API_KEY:"fake-server-only-key",TURNSTILE_SECRET:"fake-turnstile-secret",
+ DEEPSEEK_API_KEY:"fake-server-only-key",TURNSTILE_SECRET:"fake-turnstile-secret",JIUZHOU_INVITE_CODE:"test-invite-code-alpha",
  AI_LIMITER:{limit:async()=>({success:true})},GM_LIMITER:{limit:async()=>({success:true})}};
 const request=(body=sample,origin=ORIGIN)=>new Request("https://test.workers.dev/api/jiuzhou/turn",{
  method:"POST",headers:{"Origin":origin,"Content-Type":"application/json"},body:JSON.stringify(body)});
@@ -42,6 +42,24 @@ try {
  },"legacy health flags stay compatible");
  assert.equal(healthData.model,"deepseek-flash");
  assert.equal(healthData.jiuzhouReady,true);
+ assert.equal(healthData.inviteRequired,true);
+ assert.equal(healthData.inviteConfigured,true);
+ assert.ok(!JSON.stringify(healthData).includes("test-invite-code-alpha"));
+ const missingSecretEnv={...enabledEnv,JIUZHOU_INVITE_CODE:undefined};
+ const noSecret=await worker.fetch(request(),missingSecretEnv);
+ assert.equal(noSecret.status,503,"closed if no Cloudflare Secret is configured");
+ assert.equal((await noSecret.json()).error,"invite_not_configured");
+ const noCode=await worker.fetch(request({...sample,inviteCode:""}),enabledEnv);
+ assert.equal(noCode.status,401,"missing invite cannot reach model");
+ assert.equal((await noCode.json()).error,"invite_invalid");
+ const badCode=await worker.fetch(request({...sample,inviteCode:"test-invite-code-wrong"}),enabledEnv);
+ assert.equal(badCode.status,401,"wrong invite cannot reach model");
+ assert.equal((await badCode.json()).error,"invite_invalid");
+ const rotatedEnv={...enabledEnv,JIUZHOU_INVITE_CODE:"new-invite-code-beta"};
+ assert.equal((await worker.fetch(request(),rotatedEnv)).status,401,"rotation invalidates old code on next API request");
+ assert.equal((await worker.fetch(request({...sample,inviteCode:"new-invite-code-beta"}),rotatedEnv)).status,200,"new code works");
+ assert.equal(calls.filter(x=>x.includes("api.deepseek.com")).length,1,"only correct rotated code can call model");
+ calls.length=0;
  assert.deepEqual(healthData.limiters,{ai:true,gm:true});
  for(const binding of ["AI_LIMITER","GM_LIMITER"]){
   const brokenEnv={...enabledEnv,[binding]:undefined};
