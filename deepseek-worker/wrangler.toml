@@ -26,3 +26,7 @@ namespace_id = "1002"
 [ratelimits.simple]
 limit = 3
 period = 60
+
+# Minimal adventure only: automatically provision a dedicated KV store on Wrangler v4 deploy.
+[[kv_namespaces]]
+binding = "ADVENTURE_CONFIG"
