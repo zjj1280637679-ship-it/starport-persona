@@ -1,3 +1,4 @@
+import { handleMiniAdventure } from "./mini-adventure.mjs";
 // This Worker is a security boundary: DO NOT pass keys to GitHub Pages.
 // DEEPSEEK_API_KEY stays in Cloudflare Secrets; older routes also use TURNSTILE_SECRET.
 // All /api calls validate origin; legacy APIs retain their Turnstile and rate limits.
@@ -264,6 +265,8 @@ export default {
   const origin=request.headers.get("Origin")||"";
   const allowed=env.ALLOWED_ORIGIN||"";
   const url=new URL(request.url);
+  // Isolated optional adventure route. Legacy endpoints retain their existing gates.
+  if (url.pathname.startsWith("/api/mini-adventure/")) return handleMiniAdventure(request, env);
   if(url.pathname==="/health"){
    const configured=Boolean(env.DEEPSEEK_API_KEY&&env.TURNSTILE_SECRET);
    const jiuzhouReady=Boolean(env.DEEPSEEK_API_KEY);
