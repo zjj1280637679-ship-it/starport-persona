@@ -1,5 +1,19 @@
 # 接手状态账本 / HANDOFF
 
+## 2026-10-19 后续明确授权：九州取消自设门槛
+
+合并期间发现远端新增可轮换邀请码；用户再次明确选择“连新邀请码也取消，公开直接调用”。当前九州不校验 `JIUZHOU_INVITE_CODE`，健康响应 `inviteRequired:false`。合并保留远端其他改动，不读取或修改邀请码 Secret。
+
+本阶段基于已合并 `a588978`。公开 Site Key 修正后，用户完成真实 Turnstile 控件，但 Worker 仍返回 `challenge_required`，尚未获得模型剧情。用户随后明确选择“连频率及输出上限也取消”，授权九州访客直接使用现有 DeepSeek 额度。最新授权取代下方针对九州的站长启用、Turnstile、每 IP 次数和自设输出限额；其他作品接口保留原有行为。
+
+新源码 `/api/jiuzhou/turn` 只要求服务端 `DEEPSEEK_API_KEY`、正确来源和合法游戏输入，不读取 `AI_ENABLED` / `JIUZHOU_ENABLED`，不依赖 Turnstile Secret 或限流绑定，不调用 Siteverify 或限流。配置删除 `JIUZHOU_ENABLED`，遗留环境值也被忽略。`jiuzhouReady` / 有效 `jiuzhouEnabled` 仅由模型 Key 是否存在决定；`jiuzhouAccess:{challenge:false,rateLimit:false,outputLimit:"provider"}` 明示行为，旧 `configured/enabled` 字段继续服务旧接口。
+
+移除九州 2400 / 8000 Token 裁剪、44000 字符输出拒绝和 54 秒应用生成超时。[DeepSeek 文档](https://api-docs.deepseek.com/api/create-chat-completion/) 规定的整数 `max_tokens` 范围 `1..393216` 内原值转发，省略则采用供应商默认值。输入体积、消息结构、来源和服务端密钥隔离保留。无需新增账户或 Token，没有读取或修改 Secret。
+
+**验证边界**：Worker 语法、九州模拟集成、旧 GM Harness、器官 DNA 和差异检查通过。覆盖无验证码/限流绑定、旧开关 false、大输出原值转发及旧接口仍拒绝缺验证码请求。新增代码尚未提交或生产部署，尚无本阶段真实模型剧情成功证据；正常发布继续沿用 Cloudflare Git 集成，GitHub 仅作手动备用。详见 [工作日志](WORKLOG-2026-10-19.md)。
+
+## 前一阶段核验（旧九州门槛已由上述授权取代）
+
 ## 2026-10-19 最新核验：九州共享 Worker
 
 下方 2026-10-16 表格是历史快照。最新线上 `/health` 返回 `{ok:true,configured:true,enabled:true,storyEnabled:false,gmEnabled:false,jiuzhouEnabled:true}`，九州路由已开启；不能继续将“未部署新路由”当作当前故障原因。GitHub Pages 来源的九州路由 OPTIONS 返回 204 与正确 CORS 头，无 Turnstile 的 POST 返回 403 `challenge_required`。探测出口为 Cloudflare ZRH，不代表中国大陆能访问 Worker；用户确认网页本身能够打开，本次保留现有入口。入口为 `https://zjj1280637679-ship-it.github.io/jiuzhou-chronicles/`，后端继续使用本仓库 `deepseek-worker/`，没有新建供应商账户或将 Secret 放入前端。

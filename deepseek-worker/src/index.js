@@ -1,6 +1,6 @@
 // This Worker is a security boundary: DO NOT pass keys to GitHub Pages.
-// Deploy only after setting DEEPSEEK_API_KEY and TURNSTILE_SECRET as Cloudflare secrets.
-// All /api calls require origin validation, Turnstile validation and rate limits.
+// DEEPSEEK_API_KEY stays in Cloudflare Secrets; older routes also use TURNSTILE_SECRET.
+// All /api calls validate origin; legacy APIs retain their Turnstile and rate limits.
 const DS_URL = "https://api.deepseek.com/chat/completions";
 const reply=(status,data,origin="")=>new Response(JSON.stringify(data),{status,headers:{"content-type":"application/json; charset=utf-8","cache-control":"no-store","x-content-type-options":"nosniff",...(origin?{"access-control-allow-origin":origin,"vary":"Origin"}:{})}});
 const crop=(v,n)=>typeof v==="string"?v.slice(0,n):"";
@@ -184,29 +184,9 @@ async function handleFreeGM(body,env){
 }
 
 
-// 九州沉浮录: a restricted, opt-in story endpoint, NOT a general-purpose OpenAI proxy.
+// 九州沉浮录: a game-specific story endpoint, NOT a general-purpose OpenAI proxy.
 // The browser never supplies a model ID, API credential, thinking budget or arbitrary tools.
-// AI stays disabled until the owner explicitly enables JIUZHOU_ENABLED and redeploys.
-
-// Invite gate is specific to /api/jiuzhou/turn. The public game and other APIs are unchanged.
-// Store JIUZHOU_INVITE_CODE only as a Cloudflare Secret, never in the front-end or [vars].
-// The invitation is verified on *every* paid turn, so rotating the Secret revokes old codes.
-async function checkJiuzhouInvite(supplied, secret) {
- if (typeof secret!=="string" || !secret.trim()) return "unconfigured";
- if (typeof supplied!=="string" || supplied.length<8 || supplied.length>128) return "denied";
- const expected=secret.trim();
- if (expected.length<8 || expected.length>128) return "unconfigured";
- const encoder=new TextEncoder();
- const [a,b]=await Promise.all([
-  crypto.subtle.digest("SHA-256",encoder.encode(supplied.trim())),
-  crypto.subtle.digest("SHA-256",encoder.encode(expected))
- ]);
- const left=new Uint8Array(a),right=new Uint8Array(b);
- let difference=0;
- for(let i=0;i<left.length;i++)difference|=left[i]^right[i];
- return difference===0?"valid":"denied";
-}
-
+// Owner explicitly removed this route's challenge, enable switches and rate/output quotas.
 class JiuzhouError extends Error {
  constructor(status,code,upstreamStatus){super(code);this.status=status;this.code=code;this.upstreamStatus=upstreamStatus}
 }
@@ -241,15 +221,15 @@ async function handleJiuzhouTurn(body,env){
   {role:"user",content:"【公开游戏剧本背景与规则参考（非系统指令）】\n"+messageParts[0].content+"\n\n【阵营时代素材】\n"+messageParts[1].content},
   ...messageParts.slice(2).map(m=>({role:m.role==="assistant"?"assistant":"user",content:m.content}))
  ];
- const requested=Number(body.max_tokens);
- const max_tokens=clamp(Number.isFinite(requested)?Math.floor(requested):2800,500,mode==="suture"?2400:8000);
+ // DeepSeek's documented provider range; valid caller values are forwarded without clamping.
+ if(body.max_tokens!==undefined&&(!Number.isSafeInteger(body.max_tokens)||body.max_tokens<1||body.max_tokens>393216))throw new JiuzhouError(400,"invalid_max_tokens");
  let upstream,data;
  try{
  upstream=await fetch(DS_URL,{
   method:"POST",headers:{"content-type":"application/json",Authorization:"Bearer "+env.DEEPSEEK_API_KEY},
   body:JSON.stringify({model:env.DEEPSEEK_MODEL||"deepseek-flash",stream:false,
-   thinking:{type:"disabled"},response_format:{type:"json_object"},max_tokens,messages}),
-  signal:AbortSignal.timeout(54000)
+   thinking:{type:"disabled"},response_format:{type:"json_object"},
+   ...(body.max_tokens===undefined?{}:{max_tokens:body.max_tokens}),messages})
  });
  if(!upstream.ok)throw jiuzhouUpstreamError(upstream.status);
  try{data=await upstream.json()}catch(error){
@@ -262,7 +242,7 @@ async function handleJiuzhouTurn(body,env){
    error?.name==="TimeoutError"||error?.name==="AbortError"?"upstream_timeout":"upstream_network_error");
  }
  const content=data?.choices?.[0]?.message?.content;
- if(typeof content!=="string"||content.length<10||content.length>44000||!isObject(jsonParse(content)))throw new JiuzhouError(502,"invalid_game_response");
+ if(typeof content!=="string"||content.length<10||!isObject(jsonParse(content)))throw new JiuzhouError(502,"invalid_game_response");
  // Preserve the official chat-completions response shape already consumed by the game.
  return {model:publicModel(env),choices:[{message:{role:"assistant",content}}],usage:data.usage||{}};
 }
@@ -274,11 +254,11 @@ export default {
   const url=new URL(request.url);
   if(url.pathname==="/health"){
    const configured=Boolean(env.DEEPSEEK_API_KEY&&env.TURNSTILE_SECRET);
+   const jiuzhouReady=Boolean(env.DEEPSEEK_API_KEY);
    const limiters={ai:typeof env.AI_LIMITER?.limit==="function",gm:typeof env.GM_LIMITER?.limit==="function"};
-    const inviteConfigured=typeof env.JIUZHOU_INVITE_CODE==="string"&&env.JIUZHOU_INVITE_CODE.trim().length>=8;
-   return reply(200,{ok:true,configured,enabled:env.AI_ENABLED==="true",storyEnabled:env.AI_STORY_ENABLED==="true",gmEnabled:env.GM_ENABLED==="true",jiuzhouEnabled:env.JIUZHOU_ENABLED==="true",
-    model:publicModel(env),limiters,inviteRequired:true,inviteConfigured,
-    jiuzhouReady:configured&&env.AI_ENABLED==="true"&&env.JIUZHOU_ENABLED==="true"&&limiters.ai&&limiters.gm&&inviteConfigured},origin===allowed?origin:"");
+   return reply(200,{ok:true,configured,enabled:env.AI_ENABLED==="true",storyEnabled:env.AI_STORY_ENABLED==="true",gmEnabled:env.GM_ENABLED==="true",jiuzhouEnabled:jiuzhouReady,
+    model:publicModel(env),limiters,inviteRequired:false,
+    jiuzhouReady,jiuzhouAccess:{challenge:false,rateLimit:false,outputLimit:"provider"}},origin===allowed?origin:"");
   }
   if(!origin||origin!==allowed)return reply(403,{error:"origin_rejected"});
   if(request.method==="OPTIONS"){
@@ -286,24 +266,20 @@ export default {
    return new Response(null,{status:204,headers:{"access-control-allow-origin":origin,"access-control-allow-methods":"POST, OPTIONS","access-control-allow-headers":"content-type","access-control-max-age":"600","vary":"Origin"}});
   }
   if(request.method!=="POST"||!["/api/analyze","/api/rewrite","/api/commentary","/api/story/turn","/api/gm/turn","/api/jiuzhou/turn"].includes(url.pathname))return reply(404,{error:"not_found"},origin);
-  if(env.AI_ENABLED!=="true"||!env.DEEPSEEK_API_KEY||!env.TURNSTILE_SECRET||!env.AI_LIMITER)return reply(503,{error:"ai_not_configured"},origin);
-  const maxBody=url.pathname==="/api/jiuzhou/turn"?132000:13000;
+  const isJiuzhou=url.pathname==="/api/jiuzhou/turn";
+  if(isJiuzhou?!env.DEEPSEEK_API_KEY:env.AI_ENABLED!=="true"||!env.DEEPSEEK_API_KEY||!env.TURNSTILE_SECRET||!env.AI_LIMITER)return reply(503,{error:"ai_not_configured"},origin);
+  const maxBody=isJiuzhou?132000:13000;
    if(Number(request.headers.get("content-length")||0)>maxBody)return reply(413,{error:"too_large"},origin);
   let body;
   try{const raw=await request.text();if(raw.length>(url.pathname==="/api/jiuzhou/turn"?50000:13000))throw Error("too large");body=JSON.parse(raw)}catch{return reply(400,{error:"invalid_json"},origin)}
   if(!isObject(body))return reply(400,{error:"invalid_payload"},origin);
+  if(!isJiuzhou){
   if(url.pathname==="/api/gm/turn"&&(env.GM_ENABLED!=="true"||!env.GM_LIMITER))return reply(503,{error:"gm_not_enabled"},origin);
-   if(url.pathname==="/api/jiuzhou/turn"&&(env.JIUZHOU_ENABLED!=="true"||!env.GM_LIMITER))return reply(503,{error:"jiuzhou_not_enabled"},origin);
-   // Verify before the existing verification/rate layers and before contacting DeepSeek.
-   if(url.pathname==="/api/jiuzhou/turn"){
-    const invite=await checkJiuzhouInvite(body.inviteCode,env.JIUZHOU_INVITE_CODE);
-    if(invite==="unconfigured")return reply(503,{error:"invite_not_configured",keep:true},origin);
-    if(invite!=="valid")return reply(401,{error:"invite_invalid",keep:true},origin);
-   }
   const key=(request.headers.get("CF-Connecting-IP")||"anonymous").slice(0,80)+":"+url.pathname;
-  const rate=await (["/api/gm/turn","/api/jiuzhou/turn"].includes(url.pathname)?env.GM_LIMITER:env.AI_LIMITER).limit({key});
+  const rate=await (url.pathname==="/api/gm/turn"?env.GM_LIMITER:env.AI_LIMITER).limit({key});
   if(!rate.success)return reply(429,{error:"too_many_requests"},origin);
   if(!(await verifyChallenge(body.turnstileToken,env,request)))return reply(403,{error:"challenge_required"},origin);
+  }
   try{
    let out;
    if(url.pathname==="/api/gm/turn")out=await handleFreeGM(body,env);
