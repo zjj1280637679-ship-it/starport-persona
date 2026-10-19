@@ -257,7 +257,7 @@ export default {
    const jiuzhouReady=Boolean(env.DEEPSEEK_API_KEY);
    const limiters={ai:typeof env.AI_LIMITER?.limit==="function",gm:typeof env.GM_LIMITER?.limit==="function"};
    return reply(200,{ok:true,configured,enabled:env.AI_ENABLED==="true",storyEnabled:env.AI_STORY_ENABLED==="true",gmEnabled:env.GM_ENABLED==="true",jiuzhouEnabled:jiuzhouReady,
-    model:publicModel(env),limiters,
+    model:publicModel(env),limiters,inviteRequired:false,
     jiuzhouReady,jiuzhouAccess:{challenge:false,rateLimit:false,outputLimit:"provider"}},origin===allowed?origin:"");
   }
   if(!origin||origin!==allowed)return reply(403,{error:"origin_rejected"});

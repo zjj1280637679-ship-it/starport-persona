@@ -10,7 +10,7 @@ const sample={mode:"story",model:"arbitrary-unsafe-model",
  {role:"user",content:"玩家决定赶赴京师"}],max_tokens:3000};
 // Legacy flags are false and both challenge/rate bindings are intentionally absent.
 const env={ALLOWED_ORIGIN:ORIGIN,AI_ENABLED:"false",JIUZHOU_ENABLED:"false",DEEPSEEK_MODEL:"deepseek-flash",
- DEEPSEEK_API_KEY:"fake-server-only-key"};
+ DEEPSEEK_API_KEY:"fake-server-only-key",JIUZHOU_INVITE_CODE:"unused-test-invitation"};
 const request=(body=sample,origin=ORIGIN,path="/api/jiuzhou/turn")=>new Request("https://test.workers.dev"+path,{
  method:"POST",headers:{"Origin":origin,"Content-Type":"application/json"},body:JSON.stringify(body)});
 const realFetch=globalThis.fetch;
@@ -44,6 +44,8 @@ try {
  },"legacy flags stay independent of Jiuzhou access");
  assert.equal(healthData.model,"deepseek-flash");
  assert.equal(healthData.jiuzhouReady,true);
+ assert.equal(healthData.inviteRequired,false,"invitations were explicitly removed");
+ assert.ok(!JSON.stringify(healthData).includes("unused-test-invitation"));
  assert.deepEqual(healthData.limiters,{ai:false,gm:false});
  assert.deepEqual(healthData.jiuzhouAccess,{challenge:false,rateLimit:false,outputLimit:"provider"});
  const noKeyHealth=await (await worker.fetch(new Request("https://test.workers.dev/health"),{...env,DEEPSEEK_API_KEY:undefined})).json();
