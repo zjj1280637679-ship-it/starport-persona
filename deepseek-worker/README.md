@@ -75,3 +75,11 @@
 ## 提醒
 
 `GitHub Actions Secrets` 不能安全地为 GitHub Pages 前端提供 DeepSeek 密钥；即使 GitHub CI 读取了 secret，只要最终打包进浏览器 JS 就会公开。这里需要的是 Cloudflare Worker 运行时秘密环境变量。
+
+## 2026-10-19 九州 Agent 接口补记
+
+以上初始部署清单是旧作品历史资料。九州共享路由按用户决定没有验证码、邀请码、站长开关或项目频率/输出配额，不能把旧清单反向当作九州需求。
+
+九州 `POST /api/jiuzhou/turn` 现支持独立 `mode:agent`：`messages`前两项为固定规则与阵营背景，之后保留原生user/assistant/tool、tool_calls与tool_call_id；`enabledTools`选择服务器注册工具子集，不接收任意`tools` schema。正常模型step可返回tool_calls，最终交付由网页插件检查，不能将一个step当作整轮剧情成功。旧story/suture接口保持兼容。
+
+固定工具排序、固定系统规则与追加历史用于复用DeepSeek缓存，实际usage直接透传。新agent非思考模式；可选reasoning作为本轮模型replay单独保留，不渲染、不当正文字数。密钥仍只由Worker持有。最新真实结果及未完成边界见 [HANDOFF](../docs/HANDOFF.md)；模拟测试：`node deepseek-worker/test-jiuzhou-agent.mjs`。
