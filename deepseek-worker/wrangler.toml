@@ -7,7 +7,7 @@ compatibility_date = "2026-10-13"
 AI_ENABLED = "true"
 # GM needs an explicit operator enable; public model calls incur spend.
 GM_ENABLED = "false"
-# Jiuzhou uses the server key directly; its operator/challenge/rate gates were removed by owner request.
+# Jiuzhou shared API is retired; remaining applications keep their existing settings.
 DEEPSEEK_MODEL = "deepseek-flash"
 ALLOWED_ORIGIN = "https://zjj1280637679-ship-it.github.io"
 
