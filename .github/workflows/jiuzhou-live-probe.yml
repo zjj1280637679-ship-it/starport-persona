@@ -22,8 +22,8 @@ jobs:
               with urllib.request.urlopen(r,timeout=18) as x:return x.status,x.read().decode('utf-8','replace')
             except urllib.error.HTTPError as e:return e.code,e.read().decode('utf-8','replace')
           st,html=get(website)
-          print('GitHub Pages:',st,'has version script:',('ai-gateway-config.js' in html),flush=True)
-          if st!=200 or 'ai-gateway-config.js' not in html:raise AssertionError('Pages frontend not deployed')
+          print('GitHub Pages:',st,'has version script:',('harness/providers.js' in html),flush=True)
+          if st!=200 or 'harness/providers.js' not in html:raise AssertionError('Pages frontend not deployed')
           for n in range(9):
             st,data=get(worker+'/health')
             print('Worker /health attempt',n+1,'HTTP',st,data[:380],flush=True)
@@ -32,16 +32,16 @@ jobs:
               raise SystemExit(0)
             if st==200:
               state=json.loads(data)
-              if state.get('ok') is True and state.get('jiuzhouReady') is True:break
+              if state.get('ok') is True and state.get('jiuzhouSharedApiRemoved') is True:break
             time.sleep(12)
           else:raise AssertionError('Worker not deployed/ready: needs operator Cloudflare deploy')
           origin='https://zjj1280637679-ship-it.github.io'
           p='{"mode":"story","messages":[]}'
           st,data=get(worker+'/api/jiuzhou/turn','POST',{'Origin':origin,'Content-Type':'application/json'},p.encode())
           print('Invalid story payload (no paid call):',st,data[:260],flush=True)
-          if st!=400 or 'invalid_messages' not in data:raise AssertionError('Direct Jiuzhou route must validate input without requiring Turnstile')
+          if st!=410 or 'shared_api_removed' not in data:raise AssertionError('Retired Jiuzhou route must be unavailable')
           st,data=get(worker+'/api/jiuzhou/turn','POST',{'Origin':'https://untrusted.example','Content-Type':'application/json'},p.encode())
           print('Untrusted origin:',st,data[:260],flush=True)
           if st!=403 or 'origin_rejected' not in data:raise AssertionError('Cross-origin rejection not active')
-          print('PASS: live Jiuzhou gateway ready, input/origin validation active; no real model call performed')
+          print('PASS: live Jiuzhou shared gateway retired, origin validation active; no real model call performed')
           PY

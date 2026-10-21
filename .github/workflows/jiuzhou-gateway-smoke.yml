@@ -1,20 +1,16 @@
-name: Jiuzhou Shared GM Gateway Smoke
+name: Retired Jiuzhou Shared API Check
 on:
   push:
     paths:
       - 'deepseek-worker/src/index.js'
-      - 'deepseek-worker/src/jiuzhou-agent.mjs'
       - 'deepseek-worker/wrangler.toml'
       - 'deepseek-worker/test-jiuzhou.mjs'
-      - 'deepseek-worker/test-jiuzhou-agent.mjs'
       - '.github/workflows/jiuzhou-gateway-smoke.yml'
   pull_request:
     paths:
       - 'deepseek-worker/src/index.js'
-      - 'deepseek-worker/src/jiuzhou-agent.mjs'
       - 'deepseek-worker/wrangler.toml'
       - 'deepseek-worker/test-jiuzhou.mjs'
-      - 'deepseek-worker/test-jiuzhou-agent.mjs'
       - '.github/workflows/jiuzhou-gateway-smoke.yml'
 jobs:
   test:
@@ -25,6 +21,4 @@ jobs:
         with:
           node-version: '22'
       - run: node --check deepseek-worker/src/index.js
-      - run: node --check deepseek-worker/src/jiuzhou-agent.mjs
       - run: node deepseek-worker/test-jiuzhou.mjs
-      - run: node deepseek-worker/test-jiuzhou-agent.mjs

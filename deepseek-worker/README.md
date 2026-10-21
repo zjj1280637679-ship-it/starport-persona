@@ -1,3 +1,5 @@
+> **2026-10-22：九州站长共享 API 已移除。** `/api/jiuzhou/turn` 退役为 410，不再调用模型；`jiuzhouReady:false`。其他作品与现有 Secrets 不变。下文部署过程属于历史教程；腾讯云迁移准备已取消。
+
 > **部署状态提醒（2026-10-16）**：本文写作时尚未部署，因此下方“未部署”“默认 AI_ENABLED=false”属于**旧教程内容**。用户后来已在 Cloudflare 创建 Worker，且曾通过 `/health` 的 `ok/configured/enabled=true` 检查；仓库当前 `wrangler.toml` 已将 `AI_ENABLED=true`，新实验路由 `/api/story/turn` 另受 `AI_STORY_ENABLED` 限制。**线上版本、真实付费调用与新路由仍需独立核验。** 见 [docs/HANDOFF.md](../docs/HANDOFF.md)、[docs/WORKTREE.md](../docs/WORKTREE.md)。切勿把本教程误当当前实际部署记录。
 
 ---
