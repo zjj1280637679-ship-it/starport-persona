@@ -1964,7 +1964,23 @@
       init() {
         document.getElementById('btn-settings').addEventListener('click', (e) => {
           e.stopPropagation();
-          this.open();
+          if (this.drawerEl.classList.contains('open')) {
+            this.close();
+          } else {
+            this.open();
+          }
+        });
+
+        // 点抽屉外区域或按 Esc 关闭（捕获阶段拦截，避免误触翻页）
+        document.addEventListener('click', (e) => {
+          if (!this.drawerEl.classList.contains('open')) return;
+          if (this.drawerEl.contains(e.target)) return;
+          if (e.target.id === 'btn-settings') return;
+          e.stopPropagation();
+          this.close();
+        }, true);
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape') this.close();
         });
 
         document.getElementById('btn-close-settings').addEventListener('click', () => {
