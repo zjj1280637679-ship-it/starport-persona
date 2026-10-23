@@ -1,25 +1,2160 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#111b22">
-  <meta name="description" content="推开暮灯星栈酒馆的门。在一场随机访谈里，遇见你心中的文明。原创思潮测试、趣味插曲与 AI 酒保评语。">
-  <title>暮灯星栈 · 一杯酒，读懂你的文明</title>
-  <link rel="icon" type="image/png" href="./assets/result-emblem.png">
-  <link rel="stylesheet" href="./styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>再说一遍</title>
+  <style>
+    /* ==========================================================================
+       0. 基础重置与黑色电影质感主题
+       ========================================================================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #05070a;
+      color: #d1d9e6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Serif SC", serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ==========================================================================
+       1. 舞台与全幅背景层 (零外部图片文件，纯 CSS 与内联 SVG)
+       ========================================================================== */
+    #stage {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #040608;
+      perspective: 1000px;
+    }
+
+    #bg-layer {
+      position: absolute;
+      top: -2%;
+      left: -2%;
+      width: 104%;
+      height: 104%;
+      transition: background 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.8s ease;
+      z-index: 1;
+    }
+
+    /* 背景：深夜审讯室 (interrogation_room_night) - 顶部冷白锥形光、下沉桌影、水泥幽暗 */
+    .bg-interrogation_room_night {
+      background:
+        radial-gradient(ellipse 65% 55% at 50% 28%, rgba(200, 222, 235, 0.22) 0%, rgba(30, 48, 64, 0.35) 45%, rgba(6, 11, 18, 0.95) 85%),
+        linear-gradient(180deg, #050a10 0%, #08111a 45%, #03060a 75%, #010204 100%);
+    }
+
+    /* 背景：雨夜街道 (street_rain_night) - 深蓝柏油路面反光与微弱暖色霓虹晕染 */
+    .bg-street_rain_night {
+      background:
+        radial-gradient(circle at 20% 70%, rgba(220, 80, 50, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 80% 40%, rgba(60, 160, 220, 0.2) 0%, transparent 50%),
+        linear-gradient(180deg, #040810 0%, #091424 50%, #03080e 100%);
+    }
+
+    /* 背景：电话/通讯界面 (phone_ui) - 幽暗冷绿微光与单色黑屏 */
+    .bg-phone_ui {
+      background:
+        radial-gradient(circle at 50% 50%, rgba(30, 80, 60, 0.25) 0%, rgba(4, 16, 12, 0.9) 70%),
+        linear-gradient(180deg, #010604 0%, #020d08 100%);
+    }
+
+    /* 背景：昏暗室内 (room_dim) - 斜角琥珀色微弱百叶窗投影与重阴影 */
+    .bg-room_dim {
+      background:
+        radial-gradient(ellipse at 75% 30%, rgba(180, 110, 40, 0.18) 0%, transparent 60%),
+        linear-gradient(135deg, #0d0905 0%, #150f08 50%, #060402 100%);
+    }
+
+    /* 氛围粒子/雨丝内联 SVG 遮罩层 */
+    #atmosphere-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.35;
+      mix-blend-mode: screen;
+    }
+
+    /* ==========================================================================
+       2. 特效层 (FX: Vignette, Shake, Grain)
+       ========================================================================== */
+    #fx-vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 3;
+      transition: background 0.8s ease, opacity 0.8s ease;
+    }
+
+    .vignette-cold {
+      background: radial-gradient(circle at 50% 45%, rgba(0, 0, 0, 0) 35%, rgba(8, 20, 32, 0.65) 75%, rgba(2, 6, 10, 0.95) 100%);
+      opacity: 1;
+    }
+
+    .vignette-warm {
+      background: radial-gradient(circle at 50% 45%, rgba(0, 0, 0, 0) 35%, rgba(28, 16, 6, 0.65) 75%, rgba(12, 5, 2, 0.95) 100%);
+      opacity: 1;
+    }
+
+    .vignette-none {
+      background: transparent;
+      opacity: 0;
+    }
+
+    #fx-grain {
+      position: absolute;
+      inset: -50%;
+      width: 200%;
+      height: 200%;
+      pointer-events: none;
+      z-index: 4;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+    }
+
+    .grain-active {
+      opacity: 0.75;
+      animation: grainJitter 0.5s steps(4) infinite;
+    }
+
+    @keyframes grainJitter {
+      0% { transform: translate(0, 0); }
+      25% { transform: translate(-3%, -2%); }
+      50% { transform: translate(2%, 3%); }
+      75% { transform: translate(-2%, 4%); }
+      100% { transform: translate(0, 0); }
+    }
+
+    /* 震屏动画 (Shake) */
+    .shake-1 {
+      animation: screenShake1 0.35s ease-out;
+    }
+
+    .shake-2 {
+      animation: screenShake2 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes screenShake1 {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-3px, 2px); }
+      40% { transform: translate(3px, -2px); }
+      60% { transform: translate(-2px, 1px); }
+      80% { transform: translate(2px, -1px); }
+    }
+
+    @keyframes screenShake2 {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      15% { transform: translate(-6px, 5px) rotate(-0.5deg); }
+      30% { transform: translate(6px, -4px) rotate(0.5deg); }
+      45% { transform: translate(-5px, 3px) rotate(-0.3deg); }
+      60% { transform: translate(4px, -3px) rotate(0.2deg); }
+      75% { transform: translate(-2px, 2px); }
+      90% { transform: translate(1px, -1px); }
+    }
+
+    /* ==========================================================================
+       3. 顶部悬浮控制栏 (无边框、低透明度、绝无多余解释文字)
+       ========================================================================== */
+    #top-bar {
+      position: absolute;
+      top: 18px;
+      right: 22px;
+      z-index: 20;
+      display: flex;
+      gap: 14px;
+    }
+
+    .hud-btn {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #9cb0c6;
+      font-size: 20px;
+      line-height: 1;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0.35;
+      transition: opacity 0.25s ease, transform 0.2s ease, color 0.2s ease;
+    }
+
+    .hud-btn:hover {
+      opacity: 0.9;
+      color: #ffffff;
+      transform: scale(1.08);
+    }
+
+    .hud-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* ==========================================================================
+       4. 文字框 (半透明深色悬浮、无边框、无圆角描边装饰线)
+       ========================================================================== */
+    #textbox-container {
+      position: absolute;
+      bottom: 38px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(840px, 92vw);
+      min-height: 136px;
+      background: rgba(8, 12, 18, 0.76);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: none;
+      outline: none;
+      border-radius: 4px;
+      padding: 24px 30px 24px 30px;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65);
+      z-index: 10;
+      cursor: pointer;
+      transition: opacity 0.3s ease;
+    }
+
+    #speaker-tag {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      color: #7d93ac;
+      margin-bottom: 10px;
+      height: 18px;
+      line-height: 18px;
+      transition: color 0.3s ease;
+    }
+
+    #speaker-tag:empty {
+      margin-bottom: 0;
+    }
+
+    #content-text {
+      font-size: 17px;
+      line-height: 1.85;
+      letter-spacing: 0.04em;
+      color: #e2eaf4;
+      word-break: break-word;
+      min-height: 48px;
+    }
+
+    /* 光标 */
+    .typing-cursor::after {
+      content: "";
+      display: inline-block;
+      width: 7px;
+      height: 16px;
+      margin-left: 5px;
+      vertical-align: -2px;
+      background: #7394b8;
+      animation: cursorBlink 0.9s infinite;
+    }
+
+    @keyframes cursorBlink {
+      0%, 100% { opacity: 0.9; }
+      50% { opacity: 0; }
+    }
+
+    /* 翻页前进符号 › */
+    #btn-advance {
+      position: absolute;
+      right: 18px;
+      bottom: 12px;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #8fa5be;
+      font-size: 26px;
+      font-weight: 300;
+      line-height: 1;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      opacity: 0.3;
+      transition: opacity 0.25s ease, transform 0.2s ease;
+    }
+
+    #btn-advance.ready {
+      opacity: 0.75;
+      animation: advancePulse 1.8s infinite ease-in-out;
+    }
+
+    #btn-advance:hover {
+      opacity: 1 !important;
+      transform: translateX(2px);
+    }
+
+    @keyframes advancePulse {
+      0%, 100% { opacity: 0.4; transform: translateX(0); }
+      50% { opacity: 0.95; transform: translateX(3px); }
+    }
+
+    /* ==========================================================================
+       5. 抉择层 (幕终浮现：3张方向卡 + 1张自由输入卡)
+       ========================================================================== */
+    #choice-layer {
+      position: absolute;
+      bottom: 38px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(840px, 92vw);
+      z-index: 15;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      animation: choicesFadeIn 0.4s ease-out;
+    }
+
+    @keyframes choicesFadeIn {
+      from { opacity: 0; transform: translate(-50%, 14px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .choice-card {
+      background: rgba(10, 15, 22, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: none;
+      outline: none;
+      border-radius: 4px;
+      padding: 16px 24px;
+      color: #cfddec;
+      font-size: 15px;
+      line-height: 1.6;
+      letter-spacing: 0.03em;
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      transition: background 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    }
+
+    .choice-card:hover {
+      background: rgba(22, 34, 48, 0.94);
+      color: #ffffff;
+      transform: translateX(4px);
+    }
+
+    .choice-card:active {
+      transform: scale(0.99);
+    }
+
+    /* 自由输入卡 */
+    #custom-choice-container {
+      display: flex;
+      gap: 8px;
+      background: rgba(10, 15, 22, 0.88);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px 8px 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    }
+
+    #custom-choice-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #e2eaf4;
+      font-size: 15px;
+      font-family: inherit;
+    }
+
+    #custom-choice-input::placeholder {
+      color: #55677d;
+      font-size: 14px;
+    }
+
+    #custom-choice-submit {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: #8fa5be;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 12px;
+      opacity: 0.5;
+      transition: opacity 0.2s ease, color 0.2s ease;
+    }
+
+    #custom-choice-submit:hover {
+      opacity: 1;
+      color: #ffffff;
+    }
+
+    /* ==========================================================================
+       6. 回看层 (历史抉择点回退 + 残影册查看)
+       ========================================================================== */
+    #rewind-layer {
+      position: absolute;
+      inset: 0;
+      background: rgba(3, 5, 8, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 30;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .rewind-panel {
+      width: min(680px, 90vw);
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      color: #c4d4e6;
+    }
+
+    .rewind-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .rewind-title {
+      font-size: 15px;
+      letter-spacing: 0.08em;
+      color: #8da1b8;
+    }
+
+    .rewind-close-btn {
+      background: transparent;
+      border: none;
+      color: #8da1b8;
+      font-size: 20px;
+      cursor: pointer;
+      opacity: 0.5;
+      transition: opacity 0.2s ease;
+    }
+
+    .rewind-close-btn:hover {
+      opacity: 1;
+      color: #fff;
+    }
+
+    .rewind-content {
+      overflow-y: auto;
+      max-height: calc(80vh - 120px);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding-right: 6px;
+    }
+
+    /* 滚动条极简处理 */
+    .rewind-content::-webkit-scrollbar,
+    #settings-drawer::-webkit-scrollbar {
+      width: 4px;
+    }
+    .rewind-content::-webkit-scrollbar-thumb,
+    #settings-drawer::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 2px;
+    }
+
+    .rewind-section-title {
+      font-size: 13px;
+      color: #617791;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+
+    .choice-history-item {
+      background: rgba(14, 20, 30, 0.8);
+      padding: 14px 18px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .choice-history-item:hover {
+      background: rgba(25, 36, 52, 0.9);
+      transform: translateX(3px);
+    }
+
+    .choice-history-text {
+      font-size: 15px;
+      color: #e0eaf5;
+      line-height: 1.5;
+    }
+
+    .choice-history-meta {
+      font-size: 12px;
+      color: #617791;
+    }
+
+    /* 改词重说编辑区 */
+    #reword-form {
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+      background: rgba(18, 26, 38, 0.9);
+      padding: 16px;
+      border-radius: 4px;
+      margin-top: 6px;
+    }
+
+    #reword-input {
+      width: 100%;
+      background: rgba(8, 12, 18, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      resize: vertical;
+      min-height: 64px;
+    }
+
+    #reword-input:focus {
+      border-color: rgba(140, 180, 220, 0.4);
+    }
+
+    .reword-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .plain-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #b0c4de;
+      padding: 6px 16px;
+      border-radius: 3px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .plain-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .primary-btn {
+      background: rgba(45, 75, 110, 0.65);
+      border: 1px solid rgba(90, 140, 190, 0.4);
+      color: #ffffff;
+      padding: 6px 16px;
+      border-radius: 3px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .primary-btn:hover {
+      background: rgba(60, 100, 145, 0.85);
+    }
+
+    /* 残影册展示列表 */
+    #afterimage-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .afterimage-card {
+      background: rgba(15, 20, 28, 0.7);
+      border-left: 2px solid rgba(130, 90, 160, 0.5);
+      padding: 10px 14px;
+      border-radius: 0 4px 4px 0;
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .afterimage-keywords {
+      color: #bfa8d8;
+      font-weight: 500;
+    }
+
+    .afterimage-detail {
+      color: #7b8e9e;
+      font-size: 12px;
+    }
+
+    /* ==========================================================================
+       7. 设置抽屉 (右上角滑入，无解释性说明，只有干净的选项与键值)
+       ========================================================================== */
+    #settings-drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: min(340px, 85vw);
+      height: 100%;
+      background: rgba(8, 12, 17, 0.94);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.6);
+      z-index: 40;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      gap: 20px;
+      overflow-y: auto;
+    }
+
+    #settings-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .drawer-title {
+      font-size: 15px;
+      color: #8da1b8;
+      letter-spacing: 0.06em;
+    }
+
+    .setting-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .setting-label {
+      font-size: 13px;
+      color: #72879e;
+    }
+
+    .setting-input,
+    .setting-select {
+      width: 100%;
+      background: rgba(14, 20, 29, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 3px;
+      padding: 8px 10px;
+      color: #d8e4f0;
+      font-size: 13px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .setting-input:focus,
+    .setting-select:focus {
+      border-color: rgba(120, 160, 210, 0.4);
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .setting-checkbox {
+      accent-color: #4a75a0;
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .drawer-actions {
+      margin-top: auto;
+      padding-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+  </style>
 </head>
 <body>
-  <a class="skip-link" href="#main">跳到主要内容</a>
-  <header class="site-header">
-    <a class="wordmark" href="#" data-action="home" aria-label="暮灯星栈首页"><span class="brand-mark">✧</span><span>暮灯星栈<small>DUSKLIGHT TAVERN</small></span></a>
-    <nav aria-label="主导航"><button class="nav-link active" data-action="home">酒馆入口</button><button class="nav-link" data-action="archive">思潮档案 <span>↗</span></button></nav>
-    <span class="open-sign"><i></i> 今夜营业中</span>
-  </header>
-  <main id="main" tabindex="-1"></main>
-  <footer class="site-footer"><span>一份想象中的文明档案 · 一个真实的你</span><div><button data-action="references">灵感来源</button><span>·</span><button data-action="about">测评说明</button><span class="footer-version">VOL. 001 / 2026</span></div></footer>
-  <dialog id="dialog"><div class="dialog-top"><span class="eyebrow">THE PORT MANUAL</span><button class="icon-button" data-action="close-dialog" aria-label="关闭对话框">×</button></div><div id="dialog-content"></div></dialog>
-  <div id="toast" role="status" aria-live="polite"></div>
-  <script type="module" src="./src/app.js"></script>
+  <!-- 舞台与场景根元素 -->
+  <div id="stage">
+    <!-- 全幅背景层 -->
+    <div id="bg-layer" class="bg-interrogation_room_night"></div>
+
+    <!-- 粒子/雨丝内联 SVG 氛围层 -->
+    <svg id="atmosphere-layer" width="100%" height="100%">
+      <defs>
+        <pattern id="rainPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+          <line x1="10" y1="0" x2="6" y2="28" stroke="rgba(180, 210, 240, 0.35)" stroke-width="0.8" />
+          <line x1="30" y1="12" x2="26" y2="38" stroke="rgba(180, 210, 240, 0.25)" stroke-width="0.7" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#rainPattern)" />
+    </svg>
+
+    <!-- 特效层：暗角与噪点 -->
+    <div id="fx-vignette" class="vignette-cold"></div>
+    <div id="fx-grain" class="grain-active"></div>
+
+    <!-- 顶部无边框控制栏 -->
+    <div id="top-bar">
+      <button id="btn-rewind" class="hud-btn" aria-label="回看">⟲</button>
+      <button id="btn-settings" class="hud-btn" aria-label="设置">⚙</button>
+    </div>
+
+    <!-- 底部悬浮文字框 -->
+    <div id="textbox-container">
+      <div id="speaker-tag">审讯员</div>
+      <div id="content-text" class="typing-cursor"></div>
+      <button id="btn-advance" aria-label="继续">›</button>
+    </div>
+
+    <!-- 幕终抉择层 (3 张方向卡 + 1 张自由输入卡) -->
+    <div id="choice-layer">
+      <button class="choice-card" id="choice-0"></button>
+      <button class="choice-card" id="choice-1"></button>
+      <button class="choice-card" id="choice-2"></button>
+      <div id="custom-choice-container">
+        <input type="text" id="custom-choice-input" placeholder="输入回应……" maxlength="100" />
+        <button id="custom-choice-submit">›</button>
+      </div>
+    </div>
+
+    <!-- 回看与重说层 -->
+    <div id="rewind-layer">
+      <div class="rewind-panel">
+        <div class="rewind-header">
+          <div class="rewind-title">回看与重说</div>
+          <button id="btn-close-rewind" class="rewind-close-btn">×</button>
+        </div>
+        <div class="rewind-content">
+          <div>
+            <div class="rewind-section-title">抉择点</div>
+            <div id="choice-points-list"></div>
+          </div>
+          <div id="reword-form">
+            <div class="rewind-section-title">修改发言</div>
+            <textarea id="reword-input"></textarea>
+            <div class="reword-actions">
+              <button id="btn-cancel-reword" class="plain-btn">取消</button>
+              <button id="btn-confirm-reword" class="primary-btn">改词重说</button>
+            </div>
+          </div>
+          <div id="afterimage-section">
+            <div class="rewind-section-title">残影册</div>
+            <div id="afterimage-container"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 设置抽屉 -->
+    <div id="settings-drawer">
+      <div class="drawer-header">
+        <div class="drawer-title">设置</div>
+        <button id="btn-close-settings" class="rewind-close-btn">×</button>
+      </div>
+      <div class="setting-group">
+        <label class="setting-label">供应商</label>
+        <select id="cfg-provider" class="setting-select">
+          <option value="deepseek">DeepSeek</option>
+          <option value="google">Google</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label class="setting-label">密钥</label>
+        <input type="password" id="cfg-apikey" class="setting-input" placeholder="粘贴你的 API 密钥" />
+      </div>
+      <div class="setting-group">
+        <label class="setting-label">模型</label>
+        <input type="text" id="cfg-model" class="setting-input" value="deepseek-flash" />
+      </div>
+      <div class="setting-row">
+        <label class="setting-label">残影</label>
+        <input type="checkbox" id="cfg-afterimage-enabled" class="setting-checkbox" checked />
+      </div>
+      <div class="setting-group">
+        <label class="setting-label">强度档</label>
+        <select id="cfg-afterimage-tier" class="setting-select">
+          <option value="atmosphere">氛围</option>
+          <option value="dialogue" selected>台词</option>
+          <option value="ending">结局</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label class="setting-label">注入上限</label>
+        <input type="number" id="cfg-injection-limit" class="setting-input" min="1" max="20" value="6" />
+      </div>
+      <div class="setting-row">
+        <label class="setting-label">衰减</label>
+        <input type="checkbox" id="cfg-decay-enabled" class="setting-checkbox" />
+      </div>
+      <div class="setting-group">
+        <label class="setting-label">显形程度</label>
+        <select id="cfg-manifestation" class="setting-select">
+          <option value="low">低</option>
+          <option value="medium" selected>中</option>
+          <option value="high">高</option>
+        </select>
+      </div>
+      <div class="drawer-actions">
+        <button id="btn-new-game" class="plain-btn">开始新局</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. 内核 (Kernel: State, Events, Bus, Storage)
+       ========================================================================== */
+    const Kernel = {
+      // 游戏运行态数据
+      state: {
+        act: 1,
+        pageIndex: 0,
+        currentPages: [],
+        choicePoints: [],     // 历史抉择点 [{ id, act, playerInput, pageIndex, overwrittenPages }]
+        summaries: [],        // 已完成幕的剧情摘要
+        afterimages: [],      // 残影册条目 [{ keywords, emotion, exposed }]
+        isSceneEnd: false,
+        isTyping: false,
+        isGenerating: false,
+        isGameOver: false
+      },
+
+      // 用户设置（持久化于 localStorage）
+      settings: {
+        provider: 'deepseek',
+        apiKey: '',
+        model: 'deepseek-flash',
+        afterimageEnabled: true,
+        afterimageTier: 'dialogue',
+        injectionLimit: 6,
+        decayEnabled: false,
+        manifestation: 'medium'
+      },
+
+      STORAGE_KEY_STATE: 'sayItAgainSlice.state',
+      STORAGE_KEY_SETTINGS: 'sayItAgainSlice.settings',
+
+      init() {
+        this.loadSettings();
+        this.bindGlobalEvents();
+      },
+
+      loadSettings() {
+        try {
+          const saved = localStorage.getItem(this.STORAGE_KEY_SETTINGS);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            Object.assign(this.settings, parsed);
+          }
+        } catch (e) {
+          console.warn('[Kernel] 无法读取设置缓存:', e);
+        }
+        SettingsDrawer.syncFromKernel();
+      },
+
+      saveSettings() {
+        try {
+          localStorage.setItem(this.STORAGE_KEY_SETTINGS, JSON.stringify(this.settings));
+        } catch (e) {
+          console.warn('[Kernel] 无法持久化设置:', e);
+        }
+      },
+
+      saveState() {
+        try {
+          const snapshot = {
+            act: this.state.act,
+            pageIndex: this.state.pageIndex,
+            currentPages: this.state.currentPages,
+            choicePoints: this.state.choicePoints,
+            summaries: this.state.summaries,
+            afterimages: this.state.afterimages,
+            isSceneEnd: this.state.isSceneEnd,
+            isGameOver: this.state.isGameOver
+          };
+          localStorage.setItem(this.STORAGE_KEY_STATE, JSON.stringify(snapshot));
+        } catch (e) {
+          console.warn('[Kernel] 无法持久化游戏状态:', e);
+        }
+      },
+
+      loadState() {
+        try {
+          const saved = localStorage.getItem(this.STORAGE_KEY_STATE);
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            Object.assign(this.state, parsed);
+            return true;
+          }
+        } catch (e) {
+          console.warn('[Kernel] 无法恢复状态存档:', e);
+        }
+        return false;
+      },
+
+      clearState() {
+        try {
+          localStorage.removeItem(this.STORAGE_KEY_STATE);
+        } catch (e) {
+          console.warn('[Kernel] 清除存档失败:', e);
+        }
+        this.state.act = 1;
+        this.state.pageIndex = 0;
+        this.state.currentPages = [];
+        this.state.choicePoints = [];
+        this.state.summaries = [];
+        this.state.afterimages = [];
+        this.state.isSceneEnd = false;
+        this.state.isTyping = false;
+        this.state.isGenerating = false;
+        this.state.isGameOver = false;
+      },
+
+      bindGlobalEvents() {
+        // 全局第一次点击唤醒 Web Audio 声音上下文
+        window.addEventListener('click', () => {
+          AudioEngine.ensureUnlocked();
+        }, { once: true });
+        window.addEventListener('keydown', () => {
+          AudioEngine.ensureUnlocked();
+        }, { once: true });
+      },
+
+      // 获取当前页
+      getCurrentPage() {
+        return this.state.currentPages[this.state.pageIndex] || null;
+      },
+
+      // 推进一页或请求下一页
+      async stepNext() {
+        if (this.state.isGenerating) return;
+
+        // 如果文本区正在打字，点击立即打完
+        if (this.state.isTyping) {
+          TextArea.fastForward();
+          return;
+        }
+
+        // 如果当前页已经是幕终页且打字已结束，不通过点击文字区翻页（等待玩家选卡）
+        if (this.state.isSceneEnd) {
+          return;
+        }
+
+        // 如果当前幕还有缓存的后续页，直接呈现
+        if (this.state.pageIndex + 1 < this.state.currentPages.length) {
+          this.state.pageIndex++;
+          this.renderCurrentPage();
+          this.saveState();
+          return;
+        }
+
+        // 否则向生成源（实时端点或本地演示脚本）拉取下一页
+        await this.requestNextPage();
+      },
+
+      // 请求下一页的核心路由（演示模式 vs 实时模式）
+      async requestNextPage() {
+        this.state.isGenerating = true;
+        TextArea.showGeneratingIndicator();
+
+        try {
+          let page = null;
+          const isLive = Boolean(this.settings.apiKey && this.settings.apiKey.trim().length > 0);
+
+          if (isLive) {
+            page = await ProviderGateway.fetchNextPage(this.state, this.settings);
+          } else {
+            page = await DemoScriptEngine.getNextPage(this.state);
+          }
+
+          if (page) {
+            this.state.currentPages.push(page);
+            this.state.pageIndex = this.state.currentPages.length - 1;
+            this.renderCurrentPage();
+            this.saveState();
+          }
+        } catch (err) {
+          console.error('[Kernel] 获取页面失败:', err);
+        } finally {
+          this.state.isGenerating = false;
+        }
+      },
+
+      // 呈现当前页到舞台、文字区与音频
+      renderCurrentPage() {
+        const page = this.getCurrentPage();
+        if (!page) return;
+
+        // 1. 舞台与特效
+        Stage.applyPageVisuals(page);
+
+        // 2. 音频环境与音效
+        AudioEngine.handlePageSfx(page.sfx);
+
+        // 3. 幕终判定
+        this.state.isSceneEnd = Boolean(page.scene_end);
+
+        // 4. 文字区打字呈现
+        TextArea.render(page.speaker, page.text, () => {
+          // 打字完成回调
+          if (this.state.isSceneEnd) {
+            if (page.choices && Array.isArray(page.choices) && page.choices.length > 0) {
+              ChoiceLayer.show(page.choices);
+            } else {
+              // 终幕收束页（choices 为 null）
+              this.state.isGameOver = true;
+              ChoiceLayer.hide();
+              console.log('[Kernel] 达成终幕收束。');
+            }
+          } else {
+            ChoiceLayer.hide();
+          }
+        });
+      },
+
+      // 选定抉择，迈向下一幕
+      async chooseBranch(choiceText) {
+        if (!choiceText || !choiceText.trim()) return;
+        const cleanChoice = choiceText.trim();
+
+        ChoiceLayer.hide();
+
+        // 记录抉择点节点
+        Memory.recordChoicePoint(this.state.act, cleanChoice, this.state.pageIndex, this.state.currentPages);
+
+        // 生成上一幕剧情摘要
+        await Memory.summarizeCurrentAct(this.state, this.settings);
+
+        // 残影衰减（参数开启时）：每跨一幕，残影册中最旧的一条消退
+        if (this.settings.decayEnabled && this.state.afterimages.length > 0) {
+          this.state.afterimages.shift();
+        }
+
+        // 推进到下一幕
+        this.state.act++;
+        this.state.pageIndex = 0;
+        this.state.currentPages = [];
+        this.state.isSceneEnd = false;
+        this.state.isGameOver = false;
+
+        this.saveState();
+
+        // 启动新一幕第一页
+        await this.requestNextPage();
+      },
+
+      // 回退到特定抉择点并改词重说
+      async rollbackAndReword(choiceId, newSpeechText) {
+        if (!newSpeechText || !newSpeechText.trim()) return;
+
+        // 执行记忆层回退与残影提炼
+        await Memory.executeRollback(choiceId, newSpeechText.trim(), this.state, this.settings);
+
+        // 重启当前幕页面生成
+        this.saveState();
+        ChoiceLayer.hide();
+        RewindLayer.close();
+
+        await this.requestNextPage();
+      },
+
+      // 开始新局
+      resetGame() {
+        this.clearState();
+        Stage.reset();
+        AudioEngine.stopAll();
+        ChoiceLayer.hide();
+        RewindLayer.close();
+        SettingsDrawer.close();
+        this.requestNextPage();
+      }
+    };
+
+    /* ==========================================================================
+       2. 舞台 (Stage: Background & Visual FX)
+       ========================================================================== */
+    const Stage = {
+      bgLayerEl: document.getElementById('bg-layer'),
+      vignetteEl: document.getElementById('fx-vignette'),
+      grainEl: document.getElementById('fx-grain'),
+      stageEl: document.getElementById('stage'),
+
+      // 白名单定义
+      VALID_BG: ['interrogation_room_night', 'street_rain_night', 'phone_ui', 'room_dim'],
+      VALID_VIGNETTE: ['cold', 'warm', 'none'],
+
+      applyPageVisuals(page) {
+        // 背景切换
+        const bgName = this.VALID_BG.includes(page.bg) ? page.bg : 'interrogation_room_night';
+        this.bgLayerEl.className = `bg-${bgName}`;
+
+        // 特效：暗角
+        const vignette = (page.fx && this.VALID_VIGNETTE.includes(page.fx.vignette)) ? page.fx.vignette : 'cold';
+        this.vignetteEl.className = `vignette-${vignette}`;
+
+        // 特效：噪点开关
+        const grain = Boolean(page.fx && page.fx.grain);
+        if (grain) {
+          this.grainEl.classList.add('grain-active');
+        } else {
+          this.grainEl.classList.remove('grain-active');
+        }
+
+        // 特效：震屏
+        const shake = (page.fx && typeof page.fx.shake === 'number') ? page.fx.shake : 0;
+        this.triggerShake(shake);
+      },
+
+      triggerShake(level) {
+        this.stageEl.classList.remove('shake-1', 'shake-2');
+        if (level === 1) {
+          void this.stageEl.offsetWidth; // 触发 reflow 重新执行动画
+          this.stageEl.classList.add('shake-1');
+        } else if (level === 2) {
+          void this.stageEl.offsetWidth;
+          this.stageEl.classList.add('shake-2');
+        }
+      },
+
+      reset() {
+        this.bgLayerEl.className = 'bg-interrogation_room_night';
+        this.vignetteEl.className = 'vignette-cold';
+        this.grainEl.classList.add('grain-active');
+        this.stageEl.classList.remove('shake-1', 'shake-2');
+      }
+    };
+
+    /* ==========================================================================
+       3. 文字区 (Text Area: Typewriter, [wait:ms] Parser, Fast-Forward)
+       ========================================================================== */
+    const TextArea = {
+      containerEl: document.getElementById('textbox-container'),
+      speakerEl: document.getElementById('speaker-tag'),
+      contentEl: document.getElementById('content-text'),
+      advanceBtn: document.getElementById('btn-advance'),
+
+      typingTimer: null,
+      fullCleanText: '',
+      onCompleteCallback: null,
+
+      init() {
+        // 点击文字框整体或翻页按钮：若在打字则速显，若已打完则翻页
+        this.containerEl.addEventListener('click', (e) => {
+          // 避免冒泡干扰
+          Kernel.stepNext();
+        });
+      },
+
+      // 解析带 [wait:ms] 的文本，转为操作指令序列
+      parseTokens(rawText) {
+        const tokens = [];
+        const regex = /\[wait:(\d+)\]/g;
+        let lastIndex = 0;
+        let match;
+
+        while ((match = regex.exec(rawText)) !== null) {
+          if (match.index > lastIndex) {
+            tokens.push({ type: 'text', val: rawText.substring(lastIndex, match.index) });
+          }
+          tokens.push({ type: 'wait', val: parseInt(match[1], 10) });
+          lastIndex = regex.lastIndex;
+        }
+
+        if (lastIndex < rawText.length) {
+          tokens.push({ type: 'text', val: rawText.substring(lastIndex) });
+        }
+
+        return tokens;
+      },
+
+      render(speaker, rawText, onComplete) {
+        this.clearTyping();
+        this.speakerEl.textContent = speaker || '';
+        this.contentEl.textContent = '';
+        this.advanceBtn.classList.remove('ready');
+        this.contentEl.classList.add('typing-cursor');
+
+        // 保存剔除标记后的纯净文本以备速览
+        this.fullCleanText = rawText.replace(/\[wait:\d+\]/g, '');
+        this.onCompleteCallback = onComplete;
+        Kernel.state.isTyping = true;
+
+        const tokens = this.parseTokens(rawText);
+        let tokenIndex = 0;
+        let charIndex = 0;
+
+        const step = () => {
+          if (tokenIndex >= tokens.length) {
+            this.finishTyping();
+            return;
+          }
+
+          const curToken = tokens[tokenIndex];
+
+          if (curToken.type === 'wait') {
+            tokenIndex++;
+            this.typingTimer = setTimeout(step, curToken.val);
+            return;
+          }
+
+          // 文字输入
+          if (charIndex < curToken.val.length) {
+            this.contentEl.textContent += curToken.val[charIndex];
+            charIndex++;
+            this.typingTimer = setTimeout(step, 32); // 约 32ms 打字手感
+          } else {
+            tokenIndex++;
+            charIndex = 0;
+            step();
+          }
+        };
+
+        step();
+      },
+
+      // 点击立即补全当前页
+      fastForward() {
+        this.clearTyping();
+        this.contentEl.textContent = this.fullCleanText;
+        this.finishTyping();
+      },
+
+      finishTyping() {
+        this.clearTyping();
+        Kernel.state.isTyping = false;
+        this.contentEl.classList.remove('typing-cursor');
+        this.advanceBtn.classList.add('ready');
+
+        if (typeof this.onCompleteCallback === 'function') {
+          const cb = this.onCompleteCallback;
+          this.onCompleteCallback = null;
+          cb();
+        }
+      },
+
+      clearTyping() {
+        if (this.typingTimer) {
+          clearTimeout(this.typingTimer);
+          this.typingTimer = null;
+        }
+      },
+
+      showGeneratingIndicator() {
+        this.advanceBtn.classList.remove('ready');
+      }
+    };
+
+    /* ==========================================================================
+       4. 抉择层 (Choice Layer: Direction Cards + Free Input Card)
+       ========================================================================== */
+    const ChoiceLayer = {
+      layerEl: document.getElementById('choice-layer'),
+      card0: document.getElementById('choice-0'),
+      card1: document.getElementById('choice-1'),
+      card2: document.getElementById('choice-2'),
+      customInput: document.getElementById('custom-choice-input'),
+      customSubmit: document.getElementById('custom-choice-submit'),
+
+      init() {
+        this.card0.addEventListener('click', (e) => {
+          e.stopPropagation();
+          Kernel.chooseBranch(this.card0.textContent);
+        });
+        this.card1.addEventListener('click', (e) => {
+          e.stopPropagation();
+          Kernel.chooseBranch(this.card1.textContent);
+        });
+        this.card2.addEventListener('click', (e) => {
+          e.stopPropagation();
+          Kernel.chooseBranch(this.card2.textContent);
+        });
+
+        this.customSubmit.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.submitCustomChoice();
+        });
+
+        this.customInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.stopPropagation();
+            this.submitCustomChoice();
+          }
+        });
+      },
+
+      show(choices) {
+        if (!choices || choices.length < 3) return;
+        this.card0.textContent = choices[0];
+        this.card1.textContent = choices[1];
+        this.card2.textContent = choices[2];
+        this.customInput.value = '';
+
+        this.layerEl.style.display = 'flex';
+      },
+
+      hide() {
+        this.layerEl.style.display = 'none';
+      },
+
+      submitCustomChoice() {
+        const text = this.customInput.value.trim();
+        if (text) {
+          Kernel.chooseBranch(text);
+        } else {
+          // 空输入回落到第一张卡
+          Kernel.chooseBranch(this.card0.textContent);
+        }
+      }
+    };
+
+    /* ==========================================================================
+       5. 回看层 (Rewind Layer: Choice Points & Afterimage Notebook)
+       ========================================================================== */
+    const RewindLayer = {
+      layerEl: document.getElementById('rewind-layer'),
+      choiceListEl: document.getElementById('choice-points-list'),
+      rewordFormEl: document.getElementById('reword-form'),
+      rewordInputEl: document.getElementById('reword-input'),
+      afterimageSectionEl: document.getElementById('afterimage-section'),
+      afterimageContainerEl: document.getElementById('afterimage-container'),
+
+      selectedChoiceId: null,
+
+      init() {
+        document.getElementById('btn-rewind').addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.open();
+        });
+
+        document.getElementById('btn-close-rewind').addEventListener('click', () => {
+          this.close();
+        });
+
+        document.getElementById('btn-cancel-reword').addEventListener('click', () => {
+          this.rewordFormEl.style.display = 'none';
+        });
+
+        document.getElementById('btn-confirm-reword').addEventListener('click', () => {
+          const newText = this.rewordInputEl.value.trim();
+          if (newText && this.selectedChoiceId !== null) {
+            Kernel.rollbackAndReword(this.selectedChoiceId, newText);
+          }
+        });
+      },
+
+      open() {
+        this.renderChoices();
+        this.renderAfterimages();
+        this.rewordFormEl.style.display = 'none';
+        this.layerEl.style.display = 'flex';
+      },
+
+      close() {
+        this.layerEl.style.display = 'none';
+      },
+
+      renderChoices() {
+        this.choiceListEl.innerHTML = '';
+        const list = Kernel.state.choicePoints;
+
+        if (!list || list.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'choice-history-meta';
+          empty.textContent = '暂无历史抉择点';
+          this.choiceListEl.appendChild(empty);
+          return;
+        }
+
+        list.forEach((cp) => {
+          const item = document.createElement('div');
+          item.className = 'choice-history-item';
+
+          const textEl = document.createElement('div');
+          textEl.className = 'choice-history-text';
+          textEl.textContent = `“${cp.playerInput}”`;
+
+          const metaEl = document.createElement('div');
+          metaEl.className = 'choice-history-meta';
+          metaEl.textContent = `第 ${cp.act} 幕`;
+
+          item.appendChild(textEl);
+          item.appendChild(metaEl);
+
+          item.addEventListener('click', () => {
+            this.selectedChoiceId = cp.id;
+            this.rewordInputEl.value = cp.playerInput;
+            this.rewordFormEl.style.display = 'flex';
+            this.rewordInputEl.focus();
+          });
+
+          this.choiceListEl.appendChild(item);
+        });
+      },
+
+      renderAfterimages() {
+        this.afterimageContainerEl.innerHTML = '';
+
+        // 如果残影总开关关闭，隐藏残影册区块
+        if (!Kernel.settings.afterimageEnabled) {
+          this.afterimageSectionEl.style.display = 'none';
+          return;
+        }
+
+        this.afterimageSectionEl.style.display = 'block';
+        const items = Kernel.state.afterimages;
+
+        if (!items || items.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'choice-history-meta';
+          empty.textContent = '尚无被回退覆盖的时间线残影';
+          this.afterimageContainerEl.appendChild(empty);
+          return;
+        }
+
+        items.forEach((entry) => {
+          const card = document.createElement('div');
+          card.className = 'afterimage-card';
+
+          const kw = document.createElement('div');
+          kw.className = 'afterimage-keywords';
+          kw.textContent = Array.isArray(entry.keywords) ? entry.keywords.join(' · ') : (entry.keywords || '');
+
+          const detail = document.createElement('div');
+          detail.className = 'afterimage-detail';
+          detail.textContent = `${entry.emotion ? `情绪: ${entry.emotion}` : ''} ${entry.exposed ? `| 暴露: ${entry.exposed}` : ''}`.trim();
+
+          card.appendChild(kw);
+          card.appendChild(detail);
+          this.afterimageContainerEl.appendChild(card);
+        });
+      }
+    };
+
+    /* ==========================================================================
+       6. 音频合成 (Audio Synthesis: Web Audio API - Zero Audio Files)
+       ========================================================================== */
+    const AudioEngine = {
+      ctx: null,
+      rainLoopNode: null,
+      rainGainNode: null,
+      currentLoopName: null,
+
+      VALID_SFX: ['rain_loop', 'clock_tick', 'paper_shuffle', 'phone_vibrate', 'heartbeat', 'none'],
+
+      ensureUnlocked() {
+        if (!this.ctx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) {
+            this.ctx = new AudioContextClass();
+          }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      },
+
+      handlePageSfx(sfxName) {
+        if (!this.VALID_SFX.includes(sfxName)) return;
+
+        // 如果当前是持续性的 rain_loop
+        if (sfxName === 'rain_loop') {
+          this.startRainLoop();
+        } else {
+          // 其他音效触发时停止雨声循环
+          this.stopRainLoop();
+          if (sfxName !== 'none') {
+            this.playOneShot(sfxName);
+          }
+        }
+      },
+
+      startRainLoop() {
+        if (this.rainLoopNode) return; // 已在播放中
+        this.ensureUnlocked();
+        if (!this.ctx) return;
+
+        // 生成 2 秒粉红/滤波白噪声 Buffer 并循环播放
+        const bufferSize = this.ctx.sampleRate * 2;
+        const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        let b0 = 0, b1 = 0, b2 = 0;
+
+        for (let i = 0; i < bufferSize; i++) {
+          const white = Math.random() * 2 - 1;
+          b0 = 0.99 * b0 + white * 0.05;
+          b1 = 0.96 * b1 + white * 0.11;
+          b2 = 0.86 * b2 + white * 0.25;
+          output[i] = (b0 + b1 + b2) * 0.12;
+        }
+
+        const whiteNoise = this.ctx.createBufferSource();
+        whiteNoise.buffer = noiseBuffer;
+        whiteNoise.loop = true;
+
+        // 低通滤波模拟窗外密雨
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 850;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.001, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.22, this.ctx.currentTime + 1.2);
+
+        whiteNoise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        whiteNoise.start(0);
+
+        this.rainLoopNode = whiteNoise;
+        this.rainGainNode = gain;
+      },
+
+      stopRainLoop() {
+        if (this.rainLoopNode && this.rainGainNode && this.ctx) {
+          const now = this.ctx.currentTime;
+          this.rainGainNode.gain.cancelScheduledValues(now);
+          this.rainGainNode.gain.setValueAtTime(this.rainGainNode.gain.value, now);
+          this.rainGainNode.gain.exponentialRampToValueAtTime(0.0001, now + 0.6);
+
+          const oldNode = this.rainLoopNode;
+          setTimeout(() => {
+            try {
+              oldNode.stop();
+              oldNode.disconnect();
+            } catch (e) {}
+          }, 650);
+
+          this.rainLoopNode = null;
+          this.rainGainNode = null;
+        }
+      },
+
+      playOneShot(name) {
+        this.ensureUnlocked();
+        if (!this.ctx) return;
+
+        const now = this.ctx.currentTime;
+
+        if (name === 'clock_tick') {
+          // 极短脉冲声模拟秒针跳动
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1400, now);
+          osc.frequency.exponentialRampToValueAtTime(300, now + 0.02);
+
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.03);
+        } else if (name === 'paper_shuffle') {
+          // 纸张摩擦声：带通滤波短噪声突发
+          const bufferSize = Math.floor(this.ctx.sampleRate * 0.18);
+          const noiseBuffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+          const data = noiseBuffer.getChannelData(0);
+          for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+          }
+          const src = this.ctx.createBufferSource();
+          src.buffer = noiseBuffer;
+
+          const filter = this.ctx.createBiquadFilter();
+          filter.type = 'bandpass';
+          filter.frequency.value = 1200;
+          filter.Q.value = 1.4;
+
+          const gain = this.ctx.createGain();
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.18);
+
+          src.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          src.start(now);
+        } else if (name === 'phone_vibrate') {
+          // 桌面手机两次低频震动
+          const playVibe = (time) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.value = 110;
+
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.value = 320;
+
+            gain.gain.setValueAtTime(0.25, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 0.13);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(time);
+            osc.stop(time + 0.14);
+          };
+          playVibe(now);
+          playVibe(now + 0.2);
+        } else if (name === 'heartbeat') {
+          // 低频心跳两击 (lub-dub)
+          const playThump = (time, freq, dur) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, time);
+            osc.frequency.exponentialRampToValueAtTime(32, time + dur);
+
+            gain.gain.setValueAtTime(0.5, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(time);
+            osc.stop(time + dur + 0.02);
+          };
+          playThump(now, 65, 0.12);
+          playThump(now + 0.22, 52, 0.1);
+        }
+      },
+
+      stopAll() {
+        this.stopRainLoop();
+      }
+    };
+
+    /* ==========================================================================
+       7. 记忆 (Memory: Choice Points, Summaries, Afterimage Distillation)
+       ========================================================================== */
+    const Memory = {
+      recordChoicePoint(act, playerInput, pageIndex, pages) {
+        Kernel.state.choicePoints.push({
+          id: Date.now() + Math.random(),
+          act,
+          playerInput,
+          pageIndex,
+          overwrittenPages: JSON.parse(JSON.stringify(pages))
+        });
+      },
+
+      async summarizeCurrentAct(state, settings) {
+        // 收集本幕对话文本
+        const dialogueLines = state.currentPages
+          .map(p => `${p.speaker || '叙述'}: ${p.text.replace(/\[wait:\d+\]/g, '')}`)
+          .join('\n');
+
+        const isLive = Boolean(settings.apiKey && settings.apiKey.trim().length > 0);
+
+        if (isLive) {
+          try {
+            const summary = await ProviderGateway.fetchActSummary(dialogueLines, settings);
+            if (summary) {
+              state.summaries.push(summary);
+              return;
+            }
+          } catch (e) {
+            console.warn('[Memory] 实时摘要生成失败，采用兜底截断:', e);
+          }
+        }
+
+        // 演示模式或兜底：直接截取最后一页的开头作为摘要
+        const lastPage = state.currentPages[state.currentPages.length - 1];
+        const fallbackText = lastPage ? lastPage.text.replace(/\[wait:\d+\]/g, '').slice(0, 48) + '……' : `第${state.act}幕结束`;
+        state.summaries.push(fallbackText);
+      },
+
+      async executeRollback(choiceId, newSpeechText, state, settings) {
+        const idx = state.choicePoints.findIndex(cp => cp.id === choiceId);
+        if (idx === -1) return;
+
+        const targetCp = state.choicePoints[idx];
+
+        // 收集将被截断覆盖的内容（包括该抉择点之后的当前幕页面或后续幕）
+        const abandonedPages = [...state.currentPages];
+
+        // 铁律3：回退基线 = 上下文回退。截断该点之后的页面与摘要
+        state.choicePoints = state.choicePoints.slice(0, idx);
+        state.summaries = state.summaries.slice(0, targetCp.act - 1);
+        state.act = targetCp.act + 1; // 进入由新发言驱动的下一幕
+        state.pageIndex = 0;
+        state.currentPages = [];
+        state.isSceneEnd = false;
+        state.isGameOver = false;
+
+        // 铁律4：残影是插件。若开启，提炼被覆盖内容存入残影册
+        if (settings.afterimageEnabled) {
+          const isLive = Boolean(settings.apiKey && settings.apiKey.trim().length > 0);
+
+          if (isLive && abandonedPages.length > 0) {
+            try {
+              const entries = await ProviderGateway.distillAfterimages(abandonedPages, settings);
+              if (entries && Array.isArray(entries)) {
+                state.afterimages.push(...entries);
+              }
+            } catch (err) {
+              console.warn('[Memory] 实时残影提炼失败，跳过提炼:', err);
+            }
+          } else {
+            // 演示模式：提炼本地残影条目
+            const demoDistilled = DemoScriptEngine.distillDemoAfterimage(targetCp.playerInput, abandonedPages);
+            if (demoDistilled) {
+              state.afterimages.push(demoDistilled);
+            }
+          }
+        }
+
+        // 记录新的抉择点
+        this.recordChoicePoint(targetCp.act, newSpeechText, targetCp.pageIndex, targetCp.overwrittenPages);
+      }
+    };
+
+    /* ==========================================================================
+       8. 供应商网关 (Provider Gateway: DeepSeek & Google OpenAI Compatible API)
+       ========================================================================== */
+    const ProviderGateway = {
+      getEndpoint(settings) {
+        if (settings.provider === 'google') {
+          return 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+        }
+        return 'https://api.deepseek.com/chat/completions';
+      },
+
+      // 组装上下文提示词
+      buildMessages(state, settings) {
+        const sysPromptParts = [
+          '你是一个冷峻、压抑、带有黑色电影氛围的叙事生成器。',
+          '世界观与情境：深夜封闭审讯室，玩家是被审讯嫌疑人，你是审讯员。窗外暴雨，桌上有一盏刺眼的台灯。',
+          '审讯员人设：极度敏锐、语调平缓但充满压迫感，擅长抓住嫌疑人言辞里的破绽，冷酷逼问昨晚码头案件真相。',
+          `当前处于第 ${state.act} 幕。`,
+          '【输出格式铁律】',
+          '你必须且只能返回合法的单个 JSON 对象，绝不要输出 ```json 代码块围栏，绝不要附加任何解释！',
+          'JSON 字段结构严格如下：',
+          JSON.stringify({
+            bg: "interrogation_room_night (或 street_rain_night, phone_ui, room_dim)",
+            fx: { vignette: "cold", shake: 0, grain: true },
+            sfx: "rain_loop (或 clock_tick, paper_shuffle, phone_vibrate, heartbeat, none)",
+            speaker: "审讯员",
+            text: "本页台词或细节描写，字数约40-120字感，可用[wait:毫秒]停顿",
+            scene_end: false,
+            choices: null
+          }),
+          '当本幕剧情推进到关键抉择时刻，置 scene_end 为 true，并在 choices 中提供 3 个具体方向文本数组；其余普通页面置 scene_end 为 false 且 choices 为 null。'
+        ];
+
+        // 注入残影（当开启且存在条目时）
+        if (settings.afterimageEnabled && state.afterimages.length > 0) {
+          const limit = parseInt(settings.injectionLimit, 10) || 6;
+          const injected = state.afterimages.slice(-limit);
+          sysPromptParts.push(
+            `【既视感/残影注入（上一重被回退篡改的时间线残留痕迹）】：\n` +
+            `参数：强度档位=${settings.afterimageTier}，显形程度=${settings.manifestation}，跨幕衰减=${settings.decayEnabled ? '开（旧痕迹会随幕推进渐淡）' : '关（痕迹只增不减）'}。\n` +
+            `痕迹条目列表：\n${JSON.stringify(injected)}\n` +
+            `指令：审讯员在对话中可能会偶尔感知到矛盾的既视感、错觉、或对玩家尚未发生之事产生本能迟疑，但不能直接挑明“时间回退”。`
+          );
+        }
+
+        // 注入已完成幕的历史摘要链
+        if (state.summaries.length > 0) {
+          sysPromptParts.push(
+            `【已完成幕剧情摘要】：\n` + state.summaries.map((s, idx) => `第${idx + 1}幕: ${s}`).join('\n')
+          );
+        }
+
+        const messages = [
+          { role: 'system', content: sysPromptParts.join('\n\n') }
+        ];
+
+        // 序列化本幕已生成的页面
+        state.currentPages.forEach(p => {
+          messages.push({
+            role: 'assistant',
+            content: JSON.stringify(p)
+          });
+        });
+
+        // 玩家输入
+        const latestChoice = state.choicePoints[state.choicePoints.length - 1];
+        const userPrompt = (state.act === 1 && state.currentPages.length === 0)
+          ? '（开场）'
+          : (latestChoice ? latestChoice.playerInput : '继续');
+
+        messages.push({
+          role: 'user',
+          content: userPrompt
+        });
+
+        return messages;
+      },
+
+      validatePage(obj) {
+        if (!obj || typeof obj !== 'object') return false;
+        if (typeof obj.speaker !== 'string' && obj.speaker !== null) return false;
+        if (typeof obj.text !== 'string') return false;
+        if (typeof obj.scene_end !== 'boolean') return false;
+        if (obj.scene_end && (!Array.isArray(obj.choices) || obj.choices.length === 0)) return false;
+        if (obj.fx) {
+          if (obj.fx.vignette && !Stage.VALID_VIGNETTE.includes(obj.fx.vignette)) return false;
+          if (typeof obj.fx.shake === 'number' && ![0, 1, 2].includes(obj.fx.shake)) return false;
+        }
+        return true;
+      },
+
+      cleanJsonString(raw) {
+        let str = raw.trim();
+        if (str.startsWith('```')) {
+          str = str.replace(/^```[a-zA-Z]*\n?/, '').replace(/\n?```$/, '').trim();
+        }
+        return str;
+      },
+
+      // 单页请求与静默重试机制
+      async fetchNextPage(state, settings) {
+        const endpoint = this.getEndpoint(settings);
+        const messages = this.buildMessages(state, settings);
+
+        const doFetch = async () => {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${settings.apiKey.trim()}`
+            },
+            body: JSON.stringify({
+              model: settings.model.trim(),
+              messages,
+              temperature: 0.7
+            })
+          });
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+          }
+          const data = await res.json();
+          const content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          if (!content) throw new Error('API 返回内容为空');
+
+          const parsed = JSON.parse(this.cleanJsonString(content));
+          if (!this.validatePage(parsed)) {
+            throw new Error('页面结构校验未通过');
+          }
+          return parsed;
+        };
+
+        // 第一次尝试
+        try {
+          return await doFetch();
+        } catch (err1) {
+          console.warn('[ProviderGateway] 首次生成校验失败，静默重试一次:', err1);
+          // 第二次尝试（重试）
+          try {
+            return await doFetch();
+          } catch (err2) {
+            console.error('[ProviderGateway] 重试失败，启用剧情内兜底页:', err2);
+            // 铁律2 & §2 兜底页
+            return {
+              bg: 'interrogation_room_night',
+              fx: { vignette: 'none', shake: 0, grain: false },
+              sfx: 'none',
+              speaker: '',
+              text: '……（信号杂音）',
+              scene_end: false,
+              choices: null
+            };
+          }
+        }
+      },
+
+      // 幕终小请求：摘要生成
+      async fetchActSummary(dialogueText, settings) {
+        const endpoint = this.getEndpoint(settings);
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${settings.apiKey.trim()}`
+          },
+          body: JSON.stringify({
+            model: settings.model.trim(),
+            messages: [
+              {
+                role: 'system',
+                content: '你是一个剧情记录员。请用1到2句简短、冷峻的话概括以下审讯对话的核心事实进展。直接输出纯文本，不要任何多余前缀。'
+              },
+              { role: 'user', content: dialogueText }
+            ],
+            temperature: 0.3
+          })
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        return data.choices?.[0]?.message?.content?.trim() || null;
+      },
+
+      // 回退小请求：残影提炼
+      async distillAfterimages(pages, settings) {
+        const endpoint = this.getEndpoint(settings);
+        const dialogue = pages.map(p => `${p.speaker}: ${p.text}`).join('\n');
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${settings.apiKey.trim()}`
+          },
+          body: JSON.stringify({
+            model: settings.model.trim(),
+            messages: [
+              {
+                role: 'system',
+                content: '你是一个因果痕迹提炼器。将以下被时间回退抹除的对话内容提炼为残影条目 JSON 数组。\n' +
+                         '每项结构：{ "keywords": ["关键词1", "关键词2"], "emotion": "情绪简述", "exposed": "已暴露的信息" }\n' +
+                         '只输出纯 JSON 数组，绝不要代码围栏。'
+              },
+              { role: 'user', content: dialogue }
+            ],
+            temperature: 0.3
+          })
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        const content = data.choices?.[0]?.message?.content;
+        if (!content) return null;
+        return JSON.parse(this.cleanJsonString(content));
+      }
+    };
+
+    /* ==========================================================================
+       9. 设置抽屉控制器 (Settings Drawer Controller)
+       ========================================================================== */
+    const SettingsDrawer = {
+      drawerEl: document.getElementById('settings-drawer'),
+      providerSelect: document.getElementById('cfg-provider'),
+      apiKeyInput: document.getElementById('cfg-apikey'),
+      modelInput: document.getElementById('cfg-model'),
+      afterimageCheck: document.getElementById('cfg-afterimage-enabled'),
+      tierSelect: document.getElementById('cfg-afterimage-tier'),
+      limitInput: document.getElementById('cfg-injection-limit'),
+      decayCheck: document.getElementById('cfg-decay-enabled'),
+      manifestSelect: document.getElementById('cfg-manifestation'),
+
+      init() {
+        document.getElementById('btn-settings').addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.open();
+        });
+
+        document.getElementById('btn-close-settings').addEventListener('click', () => {
+          this.close();
+        });
+
+        document.getElementById('btn-new-game').addEventListener('click', () => {
+          if (confirm('确定要清除进度开始新局吗？')) {
+            Kernel.resetGame();
+          }
+        });
+
+        // 供应商切换自动填充默认模型
+        this.providerSelect.addEventListener('change', () => {
+          if (this.providerSelect.value === 'google') {
+            this.modelInput.value = 'gemini-flash-lite-latest';
+          } else {
+            this.modelInput.value = 'deepseek-flash';
+          }
+          this.syncToKernel();
+        });
+
+        // 各项表单更改同步
+        const fields = [
+          this.apiKeyInput, this.modelInput, this.afterimageCheck,
+          this.tierSelect, this.limitInput, this.decayCheck, this.manifestSelect
+        ];
+        fields.forEach(f => {
+          f.addEventListener('change', () => this.syncToKernel());
+          f.addEventListener('input', () => this.syncToKernel());
+        });
+      },
+
+      open() {
+        this.syncFromKernel();
+        this.drawerEl.classList.add('open');
+      },
+
+      close() {
+        this.drawerEl.classList.remove('open');
+      },
+
+      syncFromKernel() {
+        const s = Kernel.settings;
+        this.providerSelect.value = s.provider;
+        this.apiKeyInput.value = s.apiKey;
+        this.modelInput.value = s.model;
+        this.afterimageCheck.checked = s.afterimageEnabled;
+        this.tierSelect.value = s.afterimageTier;
+        this.limitInput.value = s.injectionLimit;
+        this.decayCheck.checked = s.decayEnabled;
+        this.manifestSelect.value = s.manifestation;
+      },
+
+      syncToKernel() {
+        const s = Kernel.settings;
+        s.provider = this.providerSelect.value;
+        s.apiKey = this.apiKeyInput.value.trim();
+        s.model = this.modelInput.value.trim();
+        s.afterimageEnabled = this.afterimageCheck.checked;
+        s.afterimageTier = this.tierSelect.value;
+        s.injectionLimit = parseInt(this.limitInput.value, 10) || 6;
+        s.decayEnabled = this.decayCheck.checked;
+        s.manifestation = this.manifestSelect.value;
+        Kernel.saveSettings();
+      }
+    };
+
+    /* ==========================================================================
+       10. 演示脚本引擎 (Demo Script Engine: Offline Scripted Pages)
+       --------------------------------------------------------------------------
+       无密钥时按与实时模式完全相同的单页协议在本地供页。
+       演示脚本的权宜（前提写明）：第二幕分支按玩家发言的关键词粗匹配；
+       回退后的重说幕用两页通用页序承接（既视感版 / 干净版），
+       以最小脚本量验证“回退—改词—残影”手感，不追求分支穷举。
+       引擎位置完全由 Kernel.state 推导（幕号 + 本幕已供页数 + 摘要链长度），
+       不自持游标：摘要链在回退时被 Memory 同步截断，
+       因此“摘要链为空但已进入第二幕”即回退重入信号。
+       ========================================================================== */
+    const DemoScriptEngine = {
+      // 第一幕：深夜审讯室开场（前三页为蜂群创意写作产出，后四页同声口续写）
+      ACT1: [
+        { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'rain_loop', speaker: '审讯员', text: '别看了，后半夜的雨下得很大，天亮之前谁也进不来。[wait:600]把双手平放在桌面上，坐正。[wait:400]我们从凌晨两点十七分那通电话开始核对。', scene_end: false, choices: null },
+        { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 1, grain: true }, sfx: 'paper_shuffle', speaker: '审讯员', text: '这是从你大衣口袋里搜出来的钥匙，还有现场抓拍的照片。[wait:500]整条街的监控都烧毁了，只有你的车牌清清楚楚停在后巷。[wait:500]别用这种眼神看着我，回答问题。', scene_end: false, choices: null },
+        { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'clock_tick', speaker: '审讯员', text: '你很冷静，甚至连心跳都没怎么乱。[wait:600]但你身上有很重的汽油味，领口还沾着焦灰。[wait:400]告诉我，火点起来的时候，你究竟是刚赶到现场，还是刚从里面逃出来？', scene_end: false, choices: null },
+        { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'paper_shuffle', speaker: '审讯员', text: '他把一张通话记录单推到灯下，指节敲了敲最上面那行。[wait:500]“凌晨两点十七分，死者的手机往外拨了一通电话，三分四十秒。号码我就不念了——那是你的号。”', scene_end: false, choices: null },
+        { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'clock_tick', speaker: '', text: '墙上的钟走得很响。你盯着记录单末尾那串数字，喉咙发紧。[wait:600]他没有催你，只是把笔横放在纸边，等。', scene_end: false, choices: null },
+        { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'heartbeat', speaker: '审讯员', text: '“她在电话里喊了你的名字。”[wait:500]“录音在隔壁放了三遍，三遍都是。所以我才把你请到这儿来——天亮之前，我们有的是时间。”', scene_end: false, choices: null },
+        { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'rain_loop', speaker: '审讯员', text: '他坐回椅子里，十指交叉。“现在，轮到你说了。[wait:400]从那通电话开始——你想怎么说，我听着。”', scene_end: true, choices: ['质问他：那通电话到底是谁打给谁的', '承认接到过电话，但否认去过后巷', '保持沉默，要求等律师来'] }
+      ],
+
+      // 第二幕三条分支（各 3 页，末页为终幕收束页：scene_end 且 choices 为 null）
+      BRANCHES: {
+        B1: [
+          { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'clock_tick', speaker: '审讯员', text: '他挑了下眉，像是没料到你会反问。[wait:400]“有意思。行，我告诉你——是她打给你的。死者在出事前最后找的人，是你。”', scene_end: false, choices: null },
+          { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'paper_shuffle', speaker: '审讯员', text: '“所以问题从来不是你打没打，[wait:400]是你听到了什么，又为什么一个字都不肯说。”他把记录单收回文件夹，动作慢得刻意。', scene_end: false, choices: null },
+          { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'rain_loop', speaker: '', text: '门外传来脚步声，他起身扣好西装的扣子。[wait:600]“今天先到这儿。想通了——敲门，我就在隔壁。”门合上的声音很轻，雨声重新灌满了房间。', scene_end: true, choices: null }
+        ],
+        B2: [
+          { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'clock_tick', speaker: '审讯员', text: '“这才像话。”[wait:400]他把笔推到你面前，“接到电话，几点，通了多久——从你接起的那一秒开始说，一句都别省。”', scene_end: false, choices: null },
+          { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 1, grain: true }, sfx: 'heartbeat', speaker: '审讯员', text: '你说出前半句时，他的笔尖停住了。[wait:500]“等等——她在电话里说，自己‘回不了家了’？[wait:400]原话。再说一遍，一个字都别差。”', scene_end: false, choices: null },
+          { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'rain_loop', speaker: '', text: '他盯着笔录看了很久，忽然合上本子起身。[wait:500]“今晚到此为止。你的律师——会有人通知的。”灯还亮着，人已经出去了。', scene_end: true, choices: null }
+        ],
+        B3: [
+          { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'clock_tick', speaker: '', text: '你把双手放回桌面，一言不发。[wait:600]钟声一格一格地走，他看着你，像看一扇关着的门。', scene_end: false, choices: null },
+          { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'rain_loop', speaker: '审讯员', text: '他忽然笑了一下，把材料一页页收齐，扣上搭扣。[wait:500]“行。沉默也是种说法——而且通常是最贵的那种。”', scene_end: false, choices: null },
+          { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'rain_loop', speaker: '', text: '“律师天亮到。在那之前，”他拉开门，回头看了你最后一眼，“想想那通电话。”[wait:500]门锁落下，审讯室只剩下雨声和钟声。', scene_end: true, choices: null }
+        ]
+      },
+
+      // 回退改词后的重说幕（2 页）：既视感版（残影启用且已有条目）/ 干净版
+      REWORD_DEJA: { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'clock_tick', speaker: '审讯员', text: '他正要开口，忽然顿住了。[wait:600]“……奇怪。[wait:400]刚才那句话——我们是不是已经说过一遍了？”他盯着你看了两秒，才把话头接回你刚改的那句上，语气明显慢了下来。', scene_end: false, choices: null },
+      REWORD_CLEAN: { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'rain_loop', speaker: '审讯员', text: '“好，那就从你刚说的这句开始。”[wait:400]他翻开新的一页笔录，笔尖悬在纸面上，“一个字一个字来——我有的是耐心。”', scene_end: false, choices: null },
+      REWORD_FINALE: { bg: 'interrogation_room_night', fx: { vignette: 'cold', shake: 0, grain: true }, sfx: 'rain_loop', speaker: '', text: '问到一半，他忽然停笔，揉了揉眉心，起身把笔录收进抽屉。[wait:500]“今天先到这儿。”门开了又合上，雨声把剩下的半句话盖了过去。', scene_end: true, choices: null },
+
+      // 自由发言的关键词粗匹配（演示脚本权宜，见节首注释）
+      matchBranch(text) {
+        const t = String(text || '');
+        if (/沉默|律师|不说|没什么好说|无可奉告/.test(t)) return 'B3';
+        if (/承认|接到|接过|否认|确实/.test(t)) return 'B2';
+        if (/质问|谁打|打给谁|凭什么|为什么/.test(t)) return 'B1';
+        return 'B1';
+      },
+
+      clone(page) {
+        return JSON.parse(JSON.stringify(page));
+      },
+
+      // 按协议供下一页（Kernel 以 state 驱动，这里只读 state 推导位置）
+      async getNextPage(state) {
+        await new Promise(r => setTimeout(r, 350));
+        const idx = state.currentPages.length;
+
+        if (state.act === 1) {
+          const page = this.ACT1[idx];
+          return page ? this.clone(page) : null;
+        }
+
+        if (state.act === 2) {
+          // 回退重入信号：摘要链已被同步截断为空（见节首注释）
+          const isReentry = state.summaries.length === 0;
+          if (isReentry) {
+            if (idx === 0) {
+              const hasAfterimage = state.afterimages.length > 0;
+              return this.clone(hasAfterimage ? this.REWORD_DEJA : this.REWORD_CLEAN);
+            }
+            return this.clone(this.REWORD_FINALE);
+          }
+          const lastCp = state.choicePoints[state.choicePoints.length - 1];
+          const branch = this.matchBranch(lastCp ? lastCp.playerInput : '');
+          const seq = this.BRANCHES[branch];
+          const page = seq[idx];
+          return page ? this.clone(page) : null;
+        }
+
+        // 竖切只有两幕，异常幕号兜底为收束页
+        return this.clone(this.REWORD_FINALE);
+      },
+
+      // 演示模式残影提炼：从被覆盖页里扫主题词，拼一条可读条目
+      distillDemoAfterimage(originalInput, abandonedPages) {
+        const lexicon = ['电话', '钥匙', '后巷', '汽油味', '监控', '车牌', '录音', '律师', '沉默'];
+        const corpus = (abandonedPages || []).map(p => p.text || '').join(' ');
+        const hits = lexicon.filter(w => corpus.includes(w)).slice(0, 3);
+        const keywords = hits.length > 0 ? hits : ['凌晨两点十七分'];
+        return {
+          keywords,
+          emotion: '审讯员的既视感与戒备',
+          exposed: `你曾说过「${String(originalInput || '').slice(0, 14)}」——这句话被收回了，却没有完全消失`
+        };
+      }
+    };
+
+    /* ==========================================================================
+       11. 启动 (Bootstrap)
+       ========================================================================== */
+    (function bootstrap() {
+      TextArea.init();
+      ChoiceLayer.init();
+      RewindLayer.init();
+      SettingsDrawer.init();
+      Kernel.init();
+
+      const restored = Kernel.loadState();
+      if (restored && Kernel.state.currentPages.length > 0) {
+        Kernel.renderCurrentPage();
+      } else {
+        Kernel.requestNextPage();
+      }
+    })();
+  </script>
 </body>
 </html>
