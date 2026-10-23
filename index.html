@@ -325,6 +325,7 @@
     }
 
     .choice-card {
+      flex: none;
       background: rgba(10, 15, 22, 0.88);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -354,6 +355,7 @@
 
     /* 自由输入卡 */
     #custom-choice-container {
+      flex: none;
       display: flex;
       gap: 8px;
       background: rgba(10, 15, 22, 0.88);
@@ -763,6 +765,11 @@
       .choice-card {
         padding: 15px 18px;
         font-size: 16px;
+        background: rgba(10, 15, 22, 0.97);
+      }
+
+      #custom-choice-container {
+        background: rgba(10, 15, 22, 0.97);
       }
 
       #custom-choice-container {
@@ -1431,10 +1438,15 @@
         this.customInput.value = '';
 
         this.layerEl.style.display = 'flex';
+        // 底栏互斥：抉择层与文字框不共存，避免两层独立定位互相遮挡
+        TextArea.containerEl.style.visibility = 'hidden';
+        TextArea.containerEl.style.pointerEvents = 'none';
       },
 
       hide() {
         this.layerEl.style.display = 'none';
+        TextArea.containerEl.style.visibility = '';
+        TextArea.containerEl.style.pointerEvents = '';
       },
 
       submitCustomChoice() {
