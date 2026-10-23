@@ -33,6 +33,7 @@
       position: relative;
       width: 100vw;
       height: 100vh;
+      height: 100dvh;
       overflow: hidden;
       background: #040608;
       perspective: 1000px;
@@ -693,6 +694,122 @@
       display: flex;
       flex-direction: column;
       gap: 10px;
+    }
+    /* ==========================================================================
+       8. 移动端适配 (小屏竖屏优先：安全区、触控目标、文字框占比、输入防缩放)
+       - 舞台高度走 dvh（见 #stage），底栏元素再叠加 safe-area 内边距，
+         保证应用内浏览器工具栏伸缩时文字框永不被遮、末行永不被切。
+       - 文字框改为弹性列布局并设高度上限，超长页在框内滚动，不溢出舞台。
+       - 所有输入框字号 ≥16px，避免 iOS 聚焦时自动放大页面。
+       ========================================================================== */
+    html, body {
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    @media (max-width: 640px) {
+      #top-bar {
+        top: calc(8px + env(safe-area-inset-top));
+        right: 10px;
+        gap: 6px;
+      }
+
+      .hud-btn {
+        width: 44px;
+        height: 44px;
+        font-size: 21px;
+        opacity: 0.55;
+      }
+
+      #textbox-container {
+        width: 94vw;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        padding: 18px 20px 22px 20px;
+        min-height: 0;
+        max-height: 54dvh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #speaker-tag {
+        margin-bottom: 6px;
+        flex: none;
+      }
+
+      #content-text {
+        font-size: 17px;
+        line-height: 1.8;
+        min-height: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #btn-advance {
+        width: 44px;
+        height: 44px;
+        right: 8px;
+        bottom: 6px;
+        font-size: 24px;
+      }
+
+      #choice-layer {
+        width: 94vw;
+        bottom: calc(12px + env(safe-area-inset-bottom));
+        max-height: 80dvh;
+        overflow-y: auto;
+        gap: 8px;
+      }
+
+      .choice-card {
+        padding: 15px 18px;
+        font-size: 16px;
+      }
+
+      #custom-choice-container {
+        padding: 10px 12px 10px 18px;
+      }
+
+      #custom-choice-input {
+        font-size: 16px;
+      }
+
+      #custom-choice-submit {
+        padding: 8px 14px;
+      }
+
+      .rewind-content {
+        max-height: calc(86dvh - 120px);
+      }
+
+      #reword-input {
+        font-size: 16px;
+      }
+
+      #settings-drawer {
+        width: min(340px, 94vw);
+        padding: 20px;
+      }
+
+      .setting-input, .setting-select {
+        font-size: 16px;
+      }
+    }
+
+    @media (max-height: 480px) and (orientation: landscape) {
+      #textbox-container {
+        max-height: 68dvh;
+        bottom: calc(8px + env(safe-area-inset-bottom));
+        padding: 14px 20px 16px 20px;
+      }
+
+      #content-text {
+        font-size: 15.5px;
+        line-height: 1.7;
+      }
+
+      #top-bar {
+        top: 6px;
+      }
     }
   </style>
 </head>
